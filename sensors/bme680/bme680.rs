@@ -57,15 +57,15 @@ where
     pub async fn config(&mut self, profile_num: u8) -> Result<(), BME680Error> {
 
         // Other Sensor Settings
-        self.chip.write_field("osrs_h", 0b101).await?;  // 16x oversampling
-        self.chip.write_field("osrs_t", 0b101).await?;  // 16x oversampling
-        self.chip.write_field("osrs_p", 0b101).await?;  // 16x oversampling
-        self.chip.write_field("filter", 0b010).await?;  // Filter coefficient of 3 - form of averaging filter
+        self.chip.write_field_str("osrs_h", 0b101).await?;  // 16x oversampling
+        self.chip.write_field_str("osrs_t", 0b101).await?;  // 16x oversampling
+        self.chip.write_field_str("osrs_p", 0b101).await?;  // 16x oversampling
+        self.chip.write_field_str("filter", 0b010).await?;  // Filter coefficient of 3 - form of averaging filter
 
         // Gas Sensor Settings
-        self.chip.write_field("gas_range_r", 4).await?; // Set Gas Range
-        self.chip.write_field("run_gas", 0b1).await?; // Turn on Gas Sensor
-        self.chip.write_field("nb_conv", profile_num).await?; // Set Heater profile to profile 0
+        self.chip.write_field_str("gas_range_r", 4).await?; // Set Gas Range
+        self.chip.write_field_str("run_gas", 0b1).await?; // Turn on Gas Sensor
+        self.chip.write_field_str("nb_conv", profile_num).await?; // Set Heater profile to profile 0
 
         // Set time between beginning of the heat phase and start of resistance conversion
         self.set_gas_wait(0b00011110, profile_num).await?; // This should be 30ms
@@ -79,7 +79,7 @@ where
     pub async fn set_gas_wait(&mut self, wait_time_ms: u8, profile_num: u8) -> Result<(), BME680Error> {
         let mut buf: String<16> = String::new();
         write!(buf, "gas_wait_{}", profile_num).unwrap();   
-        self.chip.write_field(&buf, wait_time_ms).await?;
+        self.chip.write_field_str(&buf, wait_time_ms).await?;
         Ok(())
     }
 
@@ -95,8 +95,8 @@ where
         let amb_temp = (self.temp_comp / 100) as i32;
 
         // --- Read intermediates ---
-        let res_heat_range = self.chip.read_field("res_heat_range").await? as i32;
-        let res_heat_val = self.chip.read_field("res_heat_val").await? as i32;
+        let res_heat_range = self.chip.read_field_str("res_heat_range").await? as i32;
+        let res_heat_val = self.chip.read_field_str("res_heat_val").await? as i32;
 
         // --- Calculate heater resistance ---
         let var1 = (((amb_temp * par_g3 as i32) / 10) << 8) as i32;
@@ -110,7 +110,7 @@ where
         // Format field name and write
         let mut buf: String<16> = String::new();
         write!(buf, "res_heat_{}", profile_num).unwrap();   
-        self.chip.write_field(&buf, res_heat_x).await?;
+        self.chip.write_field_str(&buf, res_heat_x).await?;
 
         Ok(())
     }
@@ -124,7 +124,7 @@ where
     // }
 
     async fn rf(&self, name: &str) -> Result<u8, BME680Error> {
-        Ok(self.chip.read_field(name).await?)
+        Ok(self.chip.read_field_str(name).await?)
     }
 
     async fn rr(&self, reg: u8) -> Result<u8, BME680Error> {
@@ -170,7 +170,7 @@ where
     pub async fn read_temperature(&mut self) -> Result<i32, BME680Error> {
         DLogger::hold();
 
-        self.chip.write_field("mode", 0b01).await?;
+        self.chip.write_field_str("mode", 0b01).await?;
 
         let mut temp_out = [0u8; 3];
         self.chip.read_regs_str("temp_msb", &mut temp_out).await?;
@@ -196,7 +196,7 @@ where
 
         // Lock logger while this is being run
         DLogger::hold();
-        self.chip.write_field("mode", 0b01).await?;
+        self.chip.write_field_str("mode", 0b01).await?;
 
         // Read Pressure
         let mut press_out = [0u8; 3];

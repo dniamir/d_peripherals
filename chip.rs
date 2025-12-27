@@ -75,6 +75,45 @@ where
         d_info!("Read Register: 0x{=u8:X}, {=u8:b}, 0x{=u8:X}, {}", reg, reg_value, reg_value, reg_value);
         Ok(reg_value)
     }
+
+    pub async fn write_field(&self, field_reg: u8, field_offset: u8, field_bits: u8, field_val: u8) -> Result<(), I2CError> {
+        // Function to write a single field using the field details
+
+        // Read the register
+        DLogger::hold();
+        let curr_field_val = self.read_reg(field_reg).await?;
+
+        // Clear the field
+        let mask = ((1u32 << field_bits) - 1) << field_offset;
+        let cleared = (curr_field_val as u32) & !mask;
+        let inserted = ((field_val as u32) << field_offset) & mask;
+        let field_val = (cleared | inserted) as u8;
+    
+        // Write the register
+        self.write_reg(field_reg, field_val).await?;
+        DLogger::release();
+
+        d_info!("Write Field: 0x{=u8:X}, {=u8:b}, 0x{=u8:X}, {}", field_reg, field_val, field_val, field_val);
+
+        Ok(())
+    }
+
+    pub async fn read_field(&self, field_reg: u8, field_offset: u8, field_bits: u8) -> Result<u8, I2CError> {
+        // Function to read a single field using the field details
+
+        // Read the field
+        DLogger::hold();
+        let reg_val = self.read_reg(field_reg).await?;
+        DLogger::release();
+
+        // Get field value from masking
+        let mask = (((1u32 << field_bits) - 1) << field_offset) as u8;
+        let field_val = (reg_val & mask) >> field_offset;
+
+        d_info!("Read Field: 0x{=u8:X}, {=u8:b}, 0x{=u8:X}, {}", field_reg, field_val, field_val, field_val);
+
+        Ok(field_val)
+    }
 }
 
 // MUTEX implementations for I2C generic - Defined Map using chip_map
@@ -123,7 +162,7 @@ where
         Ok(())
     }
 
-    pub async fn read_field(&self, field: &str) -> Result<u8, I2CError> {
+    pub async fn read_field_str(&self, field: &str) -> Result<u8, I2CError> {
         // Function to read a single field using a string name
 
         // Get field details
@@ -134,19 +173,15 @@ where
 
         // Read the field
         DLogger::hold();
-        let reg_val = self.read_reg(field_reg as u8).await?;
+        let field_val = self.read_field(field_reg, field_offset, field_bits).await.unwrap();
         DLogger::release();
-
-        // Get field value from masking
-        let mask = (((1u32 << field_bits) - 1) << field_offset) as u8;
-        let field_val = (reg_val & mask) >> field_offset;
 
         d_info!("Read Field: {}, {=u8:b}, 0x{=u8:X}, {}", field, field_val, field_val, field_val);
 
         Ok(field_val)
     }
 
-    pub async fn write_field(&self, field: &str, field_val: u8) -> Result<(), I2CError> {
+    pub async fn write_field_str(&self, field: &str, field_val: u8) -> Result<(), I2CError> {
         // Function to write a single field using a string name
        
         // Get field details
@@ -155,18 +190,9 @@ where
         let field_offset: u8 = field_dets.offset as u8;
         let field_bits: u8 = field_dets.bits as u8;
 
-        // Read the register
+        // Write the field
         DLogger::hold();
-        let curr_field_val = self.read_reg(field_reg).await?;
-
-        // Clear the field
-        let mask = ((1u32 << field_bits) - 1) << field_offset;
-        let cleared = (curr_field_val as u32) & !mask;
-        let inserted = ((field_val as u32) << field_offset) & mask;
-        let field_val = (cleared | inserted) as u8;
-    
-        // Write the register
-        self.write_reg(field_reg, field_val).await?;
+        self.write_field(field_reg, field_offset, field_bits, field_val).await?;
         DLogger::release();
 
         d_info!("Write Field: {}, {=u8:b}, 0x{=u8:X}, {}", field, field_val, field_val, field_val);
