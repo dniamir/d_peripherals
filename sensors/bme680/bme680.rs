@@ -30,6 +30,12 @@ pub struct BME680<I2C, ChipGeneric=Chip<I2C, BME680FieldMap>> {
     pub _i2c: PhantomData<I2C>,
 }
 
+impl <I2C, ChipGeneric> BME680<I2C, ChipGeneric> {
+    pub const DEFAULT_I2C_ADDRESS: u8 = 0x76;
+    pub const WHO_AM_I_REG: u8 = 0xD0;
+    pub const WHO_AM_I_VAL: u8 = 0x61;
+}
+
 // When Chip is defined using the BME680 FieldMap
 impl <I2C> BME680<I2C, Chip<I2C, BME680FieldMap>> 
 where
@@ -37,7 +43,11 @@ where
 {
 
     // Constructor for when a Chip is not given
-    pub async fn new(i2c: I2C, i2c_addr: u8) -> Result<Self, BME680Error> {
+    pub async fn new<T: Into<Option<u8>>>(i2c: I2C, i2c_addr: T) -> Result<Self, BME680Error> {
+
+        // Default i2c address
+        let i2c_addr = i2c_addr.into();
+        let i2c_addr = i2c_addr.unwrap_or(Self::DEFAULT_I2C_ADDRESS);
 
         let chip: Chip<I2C, BME680FieldMap> = Chip{i2c, i2c_addr, _map: PhantomData};
 
