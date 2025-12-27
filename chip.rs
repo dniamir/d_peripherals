@@ -127,7 +127,7 @@ where
         // Basic function to read multiple registers using a string name
         
         // Get field details
-        let reg_dets = MAP::get_field(reg_str).ok_or(I2CError::NotFound)?;
+        let reg_dets = MAP::get_read_field(reg_str).ok_or(I2CError::NotFound)?;
         
         // Read the registers
         self.read_regs(reg_dets.reg, reg_values).await?;
@@ -138,7 +138,7 @@ where
         // Function to read a single register using a string name
         
         // Get field details
-        let reg_dets = MAP::get_field(reg_str).ok_or(I2CError::NotFound)?;
+        let reg_dets = MAP::get_read_field(reg_str).ok_or(I2CError::NotFound)?;
         
         // Just read the raw register value
         DLogger::hold();
@@ -152,7 +152,7 @@ where
         // Function to write a single register using a string name
         
         // Get register details
-        let reg_dets = MAP::get_field(reg_str).ok_or(I2CError::NotFound)?;
+        let reg_dets = MAP::get_write_field(reg_str).ok_or(I2CError::NotFound)?;
         
         // Write the register
         DLogger::hold();
@@ -166,7 +166,7 @@ where
         // Function to read a single field using a string name
 
         // Get field details
-        let field_dets = MAP::get_field(field).ok_or(I2CError::NotFound)?;
+        let field_dets = MAP::get_read_field(field).ok_or(I2CError::NotFound)?;
         let field_reg: u8 = field_dets.reg as u8;
         let field_offset: u8 = field_dets.offset as u8;
         let field_bits: u8 = field_dets.bits as u8;
@@ -185,7 +185,7 @@ where
         // Function to write a single field using a string name
        
         // Get field details
-        let field_dets = MAP::get_field(field).ok_or(I2CError::NotFound)?;
+        let field_dets = MAP::get_write_field(field).ok_or(I2CError::NotFound)?;
         let field_reg: u8 = field_dets.reg as u8;
         let field_offset: u8 = field_dets.offset as u8;
         let field_bits: u8 = field_dets.bits as u8;

@@ -299,8 +299,11 @@ where
 pub struct BME680FieldMap;
 
 impl FieldMapProvider for BME680FieldMap {
-    fn get_field(name: &str) -> Option<&'static Field> {
-        FIELD_MAP.get(name)
+    fn get_read_field(name: &str) -> Option<Field> {
+        Some(*FIELD_MAP.get(name)?)
+    }
+    fn get_write_field(name: &str) -> Option<Field> {
+        BME680FieldMap::get_read_field(name)
     }
 }
 
