@@ -64,6 +64,7 @@ where
         Ok(this)
     }
 
+    // Set default settings for the sensor
     pub async fn config(&mut self, profile_num: u8) -> Result<(), BME680Error> {
 
         // Other Sensor Settings
@@ -86,6 +87,7 @@ where
         Ok(())
     }
 
+    // Set a wait profile for the gas sensor
     pub async fn set_gas_wait(&mut self, wait_time_ms: u8, profile_num: u8) -> Result<(), BME680Error> {
         let mut buf: String<16> = String::new();
         write!(buf, "gas_wait_{}", profile_num).unwrap();   
@@ -93,6 +95,7 @@ where
         Ok(())
     }
 
+    // Set a heater profile for the gas sensor
     pub async fn set_heater_temp(&mut self, target_temp: i16, profile_num: u8) -> Result<(), BME680Error> {
 
         // --- Get calibration values ---
@@ -125,22 +128,17 @@ where
         Ok(())
     }
 
-    // async fn self.rf(this: &mut Self, name: &str) -> Result<u8, BME680Error> {
-    //     Ok(this.chip.read_field(name).await?)
-    // }
-
-    // async fn self.rr(this: &mut Self, reg: u8) -> Result<u8, BME680Error> {
-    //     Ok(this.chip.read_reg(reg).await?)
-    // }
-
+    // Shortcut function for read field
     async fn rf(&self, name: &str) -> Result<u8, BME680Error> {
         Ok(self.chip.read_field_str(name).await?)
     }
 
+    // Shortcut register for read register
     async fn rr(&self, reg: u8) -> Result<u8, BME680Error> {
         Ok(self.chip.read_reg(reg).await?)
     }
 
+    // Read all the calibration codes from off sensor
     pub async fn read_cal_codes(&mut self) -> Result<(), BME680Error> {
 
         // Temperature
@@ -177,6 +175,7 @@ where
         Ok(())
     }
 
+    // Read the sensor temperature output
     pub async fn read_temperature(&mut self) -> Result<i32, BME680Error> {
         DLogger::hold();
 
@@ -202,6 +201,7 @@ where
         Ok(temp_comp)
     }
 
+    // Read the sensor pressure output
     pub async fn read_pressure(&mut self) -> Result<u32, BME680Error> {
 
         // Lock logger while this is being run
@@ -226,7 +226,9 @@ where
         Ok(press_comp)
     }
 
+    // Calibrate the raw temperature output
     pub fn calibrate_temperature(&mut self, temp_adc: u32) -> i32 {
+
         // Calibration constants
         let par_t1 = self.cal_codes.par_t1; // i16
         let par_t2 = self.cal_codes.par_t2; // i16
@@ -247,6 +249,7 @@ where
         temp_comp
     }
 
+    // Calibrate the raw pressure output
     pub fn calibrate_pressure(&mut self, press_adc: u32) -> u32 {
         let par_p1 = self.cal_codes.par_p1;
         let par_p2 = self.cal_codes.par_p2;
