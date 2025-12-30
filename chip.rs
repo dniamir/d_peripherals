@@ -45,20 +45,14 @@ where
 
     // Basic function to read multiple registers
     pub async fn read_regs(&self, reg: u8, reg_values: &mut [u8]) -> Result<(), ChipError> {
+        
+        self.i2c.write_read(self.i2c_addr, reg, reg_values).await?;
 
         let mut reg_idx = 0;
         for reg_value in reg_values.iter() {
             d_info!("Read Register: 0x{=u8:X}, {=u8:b}, 0x{=u8:X}, {}", reg + reg_idx, reg_value, reg_value, reg_value);
             reg_idx += 1;
         }
-        
-        self.i2c.write_read(self.i2c_addr, reg, reg_values).await?;
-
-        // let mut reg_idx = 0;
-        // for reg_value in reg_values.iter() {
-        //     d_info!("Read Register: 0x{=u8:X}, {=u8:b}, 0x{=u8:X}, {}", reg + reg_idx, reg_value, reg_value, reg_value);
-        //     reg_idx += 1;
-        // }
         Ok(())
     }
 
