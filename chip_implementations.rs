@@ -27,7 +27,7 @@ impl From<TwimError> for CommError {
 }
 
 // Async function to add a delay to a command
-async fn add_timeout<Fut>(op: Fut, timeout_ms: u64, recovery_delay_ms: u64, return_ok_on_timeout: bool) -> Result<(), CommError>
+async fn add_timeout<Fut>(op: Fut, timeout_ms: u64, recovery_delay_ms: u64) -> Result<(), CommError>
 where
     Fut: Future<Output = Result<(), CommError>>,
 {
@@ -38,7 +38,7 @@ where
         op,
     ).await;
 
-    let result = match timeout_func {
+    let _result = match timeout_func {
         Ok(comm_result) => {
             if comm_result.is_err() { 
                 d_info!("Comm Error");
@@ -74,7 +74,6 @@ impl CommProvider for I2CMutexWrapper {
             async { Ok(com.await?) }, 
             200, 
             200,
-            false,
         ).await
     }
 
@@ -92,7 +91,6 @@ impl CommProvider for I2CMutexWrapper {
             async { Ok(com.await?) }, 
             200, 
             200,
-            true,
         ).await                      
     }
 }
