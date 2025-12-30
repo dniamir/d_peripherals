@@ -5,7 +5,7 @@ use core::fmt::Write;
 use phf::Map;  // Efficient map for register maps
 use phf_macros::phf_map;
 
-use crate::d_peripherals::chip::{Chip, I2CProvider, I2CError};
+use crate::d_peripherals::chip::{Chip, CommProvider, ChipError};
 use crate::d_peripherals::chip_map::{Field, FieldMapProvider};
 use crate::{d_log::dlogger::DLogger, d_info};  // Logging
 
@@ -13,12 +13,12 @@ use crate::{d_log::dlogger::DLogger, d_info};  // Logging
 #[derive(Debug)]
 pub enum BME680Error {
     NotFound,
-    BusError(I2CError),
+    BusError(ChipError),
 }
 
 // Error conversion 
-impl From<I2CError> for BME680Error {
-    fn from(err: I2CError) -> Self {BME680Error::BusError(err)}
+impl From<ChipError> for BME680Error {
+    fn from(err: ChipError) -> Self {BME680Error::BusError(err)}
 }
 
 pub struct BME680<I2C, ChipGeneric=Chip<I2C, BME680FieldMap>> {
@@ -39,7 +39,7 @@ impl <I2C, ChipGeneric> BME680<I2C, ChipGeneric> {
 // When Chip is defined using the BME680 FieldMap
 impl <I2C> BME680<I2C, Chip<I2C, BME680FieldMap>> 
 where
-    I2C: I2CProvider,
+    I2C: CommProvider,
 {
 
     // Constructor for when a Chip is not given
@@ -62,29 +62,6 @@ where
         this.read_cal_codes().await?;
 
         Ok(this)
-    }
-
-    // Set default settings for the sensor
-    pub async fn config(&mut self, profile_num: u8) -> Result<(), BME680Error> {
-
-        // Other Sensor Settings
-        self.chip.write_field_str("osrs_h", 0b101).await?;  // 16x oversampling
-        self.chip.write_field_str("osrs_t", 0b101).await?;  // 16x oversampling
-        self.chip.write_field_str("osrs_p", 0b101).await?;  // 16x oversampling
-        self.chip.write_field_str("filter", 0b010).await?;  // Filter coefficient of 3 - form of averaging filter
-
-        // Gas Sensor Settings
-        self.chip.write_field_str("gas_range_r", 4).await?; // Set Gas Range
-        self.chip.write_field_str("run_gas", 0b1).await?; // Turn on Gas Sensor
-        self.chip.write_field_str("nb_conv", profile_num).await?; // Set Heater profile to profile 0
-
-        // Set time between beginning of the heat phase and start of resistance conversion
-        self.set_gas_wait(0b00011110, profile_num).await?; // This should be 30ms
-
-        // Set heater temperature
-        self.set_heater_temp(300, profile_num).await?;  // Set heater profile 0 to 300C
-
-        Ok(())
     }
 
     // Set a wait profile for the gas sensor

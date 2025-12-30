@@ -5,27 +5,26 @@ use phf_macros::phf_map;
 
 use embassy_time::Timer;
 
-use crate::d_peripherals::chip::{Chip, I2CProvider, I2CError};
+use crate::d_peripherals::chip::{Chip, CommProvider, ChipError};
 use crate::d_peripherals::chip_map::{Field, FieldMapProvider};
 use crate::{d_log::dlogger::DLogger, d_info};  // Logging
 
+#[derive(Debug)]
 pub enum TSL2591Error {
     NotFound,
-    BusError(I2CError),
+    BusError(ChipError),
 }
 
 // Error conversion 
-impl From<I2CError> for TSL2591Error {
-    fn from(err: I2CError) -> Self {TSL2591Error::BusError(err)}
+impl From<ChipError> for TSL2591Error {
+    fn from(err: ChipError) -> Self {TSL2591Error::BusError(err)}
 }
 
 pub struct TSL2591<I2C, ChipGeneric=Chip<I2C, TSL2591FieldMap>> {
     pub chip: ChipGeneric,
-    pub light_fs: u16,
-    pub light_ir: u16,
-    pub light_vis: u16,
     enabled: bool,
     pub _i2c: PhantomData<I2C>,
+    pub interrupt_pin: Option<u16>,
 }
 
 impl <I2C, ChipGeneric> TSL2591<I2C, ChipGeneric> {
@@ -36,7 +35,7 @@ impl <I2C, ChipGeneric> TSL2591<I2C, ChipGeneric> {
 
 impl <I2C> TSL2591<I2C, Chip<I2C, TSL2591FieldMap>> 
 where
-    I2C: I2CProvider,
+    I2C: CommProvider,
 {
     // Constructor for when a Chip is not given
     pub fn new<T: Into<Option<u8>>>(i2c: I2C, i2c_addr: T) -> Result<Self, TSL2591Error> {
@@ -50,11 +49,9 @@ where
         d_info!("Constructing new TSL2591 sensor");
         let this = Self {
                                        chip,
-                                       light_fs: 0,
-                                       light_ir: 0,
-                                       light_vis: 0,
                                        enabled: false,
-                                       _i2c: PhantomData
+                                       _i2c: PhantomData,
+                                       interrupt_pin: Some(0),
                                       };
         Ok(this)
     }
@@ -66,17 +63,17 @@ where
         DLogger::hold();
 
         self.reset().await?;
-        Timer::after_millis(200).await;  // WHOAMI will not read if there's a delay
+        // Timer::after_millis(200).await;  // WHOAMI will not read if there's a delay - but this is already built in
 
         let id = self.chip.read_field_str("ID").await?; // Assuming 0x12 is ID register address
 
         DLogger::release();
 
         if id == Self::WHO_AM_I_VAL {
-            d_info!("TSL connection suffessful:");
+            d_info!("TSL connection suffessful");
             Ok(true)
         } else {
-            d_info!("TSL connection failed:");
+            d_info!("TSL connection failed");
             Ok(false)
         }
     }
@@ -131,7 +128,7 @@ where
     }
 
     // Basic configuration for the sensor
-    pub async fn configure(&self) -> Result<(), TSL2591Error> {
+    pub async fn basic_config(&self) -> Result<(), TSL2591Error> {
         d_info!("Initializing TSL2591 basic configuration");
         DLogger::hold();
         self.chip.write_field_str("AGAIN", 0b01).await?;
@@ -211,18 +208,18 @@ impl FieldMapProvider for TSL2591FieldMap {
 
 static FIELD_MAP: Map<&'static str, Field> = phf_map! {
     // Enable Register
-    "ENABLE" => Field { reg: 0x00, offset: 0, bits: 8, writable: false },
-    "NPIEN" => Field { reg: 0x00, offset: 7, bits: 1, writable: false },
-    "SAI" => Field { reg: 0x00, offset: 6, bits: 1, writable: false },
-    "AIEN" => Field { reg: 0x00, offset: 4, bits: 1, writable: false },
-    "AEN" => Field { reg: 0x00, offset: 1, bits: 1, writable: false },
-    "PON" => Field { reg: 0x00, offset: 0, bits: 1, writable: false },
+    "ENABLE" => Field { reg: 0x00, offset: 0, bits: 8, writable: true },
+    "NPIEN" => Field { reg: 0x00, offset: 7, bits: 1, writable: true },
+    "SAI" => Field { reg: 0x00, offset: 6, bits: 1, writable: true },
+    "AIEN" => Field { reg: 0x00, offset: 4, bits: 1, writable: true },
+    "AEN" => Field { reg: 0x00, offset: 1, bits: 1, writable: true },
+    "PON" => Field { reg: 0x00, offset: 0, bits: 1, writable: true },
 
     // Control Register
-    "CONTROL" => Field { reg: 0x01, offset: 0, bits: 8, writable: false },
-    "ATIME" => Field { reg: 0x01, offset: 0, bits: 3, writable: false },
-    "AGAIN" => Field { reg: 0x01, offset: 4, bits: 2, writable: false },
-    "SRESET" => Field { reg: 0x01, offset: 7, bits: 1, writable: false },
+    "CONTROL" => Field { reg: 0x01, offset: 0, bits: 8, writable: true },
+    "ATIME" => Field { reg: 0x01, offset: 0, bits: 3, writable: true },
+    "AGAIN" => Field { reg: 0x01, offset: 4, bits: 2, writable: true },
+    "SRESET" => Field { reg: 0x01, offset: 7, bits: 1, writable: true },
 
     // ALS Data Register
     "C0DATAL" => Field { reg: 0x14, offset: 0, bits: 8, writable: false },
@@ -231,21 +228,21 @@ static FIELD_MAP: Map<&'static str, Field> = phf_map! {
     "C1DATAH" => Field { reg: 0x17, offset: 0, bits: 8, writable: false },
 
     // Interrupts and Persists
-    "PERSIST" => Field { reg: 0x0C, offset: 0, bits: 4, writable: false },
-    "AILTL" => Field { reg: 0x04, offset: 0, bits: 8, writable: false },
-    "AILTH" => Field { reg: 0x05, offset: 0, bits: 8, writable: false },
-    "AIHTL" => Field { reg: 0x06, offset: 0, bits: 8, writable: false },
-    "AIHTH" => Field { reg: 0x07, offset: 0, bits: 8, writable: false },
-    "NPAILTL" => Field { reg: 0x08, offset: 0, bits: 8, writable: false },
-    "NPAILTH" => Field { reg: 0x09, offset: 0, bits: 8, writable: false },
-    "NPAIHTL" => Field { reg: 0x0A, offset: 0, bits: 8, writable: false },
-    "NPAIHTH" => Field { reg: 0x0B, offset: 0, bits: 8, writable: false },
+    "PERSIST" => Field { reg: 0x0C, offset: 0, bits: 4, writable: true },
+    "AILTL" => Field { reg: 0x04, offset: 0, bits: 8, writable: true },
+    "AILTH" => Field { reg: 0x05, offset: 0, bits: 8, writable: true },
+    "AIHTL" => Field { reg: 0x06, offset: 0, bits: 8, writable: true },
+    "AIHTH" => Field { reg: 0x07, offset: 0, bits: 8, writable: true },
+    "NPAILTL" => Field { reg: 0x08, offset: 0, bits: 8, writable: true },
+    "NPAILTH" => Field { reg: 0x09, offset: 0, bits: 8, writable: true },
+    "NPAIHTL" => Field { reg: 0x0A, offset: 0, bits: 8, writable: true },
+    "NPAIHTH" => Field { reg: 0x0B, offset: 0, bits: 8, writable: true },
 
     // Status Register
-    "STATUS" => Field { reg: 0x13, offset: 0, bits: 8, writable: false },
-    "NPINTR" => Field { reg: 0x13, offset: 5, bits: 1, writable: false },
-    "AINT" => Field { reg: 0x13, offset: 4, bits: 1, writable: false },
-    "AVALID" => Field { reg: 0x13, offset: 0, bits: 1, writable: false },
+    "STATUS" => Field { reg: 0x13, offset: 0, bits: 8, writable: true },
+    "NPINTR" => Field { reg: 0x13, offset: 5, bits: 1, writable: true },
+    "AINT" => Field { reg: 0x13, offset: 4, bits: 1, writable: true },
+    "AVALID" => Field { reg: 0x13, offset: 0, bits: 1, writable: true },
 
     // ID Register
     "ID" => Field { reg: 0x12, offset: 0, bits: 8, writable: false },
