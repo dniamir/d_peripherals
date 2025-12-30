@@ -9,9 +9,20 @@ use crate::{d_log::dlogger::DLogger, d_info};  // Logging
 
 
 // Trait defined for embassy nRF52840 I2C mutex
-#[derive(Clone)]
-pub struct I2CMutexWrapper(pub &'static Mutex<ThreadModeRawMutex, Twim<'static>>);
+pub trait Addressable {
+    fn set_address(&mut self, addr: u8);
+}
 
+#[derive(Clone)]
+pub struct I2CMutexWrapper {
+    pub mutex: &'static Mutex<ThreadModeRawMutex, Twim<'static>>,
+    pub i2c_address: Option<u8>,
+}
+impl Addressable for I2CMutexWrapper {
+    fn set_address(&mut self, addr: u8) {
+        self.i2c_address = Some(addr);
+    }
+}
 
 #[derive(Debug)]
 pub enum CommError {
@@ -60,13 +71,14 @@ where
 
 // write_read and write for nRF52840
 impl CommProvider for I2CMutexWrapper {
-    async fn write_read(&self, i2c_address: u8, reg: u8, reg_vals: &mut [u8]) -> Result<(), CommError> {
+    async fn write_read(&self, reg: u8, reg_vals: &mut [u8]) -> Result<(), CommError> {
 
         // Get TWIM from MUTEX
-        let mut twim = self.0.lock().await;
+        let mut twim = self.mutex.lock().await;
 
         // Define communication without calling it
         let reg_buf: [u8; 1] = [reg];
+        let i2c_address = self.i2c_address.unwrap();
         let com = twim.write_read(i2c_address, &reg_buf, reg_vals);
 
         // Call communication with a timeout
@@ -77,13 +89,14 @@ impl CommProvider for I2CMutexWrapper {
         ).await
     }
 
-    async fn write(&self, i2c_address: u8, reg: u8, reg_val: u8) -> Result<(), CommError> {
+    async fn write(&self, reg: u8, reg_val: u8) -> Result<(), CommError> {
         
         // Get TWIM from MUTEX
-        let mut twim = self.0.lock().await;
+        let mut twim = self.mutex.lock().await;
 
         // Define communication without calling it
         let reg_buf: [u8; 2] = [reg, reg_val];
+        let i2c_address = self.i2c_address.unwrap();
         let com = twim.write(i2c_address, &reg_buf);
         
         // Call communication with a timeout

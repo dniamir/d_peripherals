@@ -6,6 +6,7 @@ use phf_macros::phf_map;
 use embassy_time::Timer;
 
 use crate::d_peripherals::chip::{Chip, CommProvider, ChipError};
+use crate::d_peripherals::chip_implementations::Addressable;
 use crate::d_peripherals::chip_map::{Field, FieldMapProvider};
 use crate::{d_log::dlogger::DLogger, d_info};  // Logging
 
@@ -35,16 +36,16 @@ impl <I2C, ChipGeneric> TSL2591<I2C, ChipGeneric> {
 
 impl <I2C> TSL2591<I2C, Chip<I2C, TSL2591FieldMap>> 
 where
-    I2C: CommProvider,
+    I2C: CommProvider + Addressable,
 {
     // Constructor for when a Chip is not given
-    pub fn new<T: Into<Option<u8>>>(i2c: I2C, i2c_addr: T) -> Result<Self, TSL2591Error> {
+    pub fn new_i2c<T: Into<Option<u8>>>(i2c: I2C, i2c_addr: T) -> Result<Self, TSL2591Error> {
 
         // Default i2c address
         let i2c_addr = i2c_addr.into();
         let i2c_addr = i2c_addr.unwrap_or(Self::DEFAULT_I2C_ADDRESS);
 
-        let chip: Chip<I2C, TSL2591FieldMap> = Chip{i2c, i2c_addr, _map: PhantomData};
+        let chip: Chip<I2C, TSL2591FieldMap> = Chip::new_i2c(i2c, i2c_addr);
 
         d_info!("Constructing new TSL2591 sensor");
         let this = Self {
@@ -55,7 +56,12 @@ where
                                       };
         Ok(this)
     }
+}
 
+impl <I2C> TSL2591<I2C, Chip<I2C, TSL2591FieldMap>> 
+where
+    I2C: CommProvider,
+{
     // Initialize the system by checking the WHOAMI register
     pub async fn initialize(&mut self) -> Result<bool, TSL2591Error> {
 

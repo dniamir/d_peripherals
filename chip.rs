@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 
-use crate::d_peripherals::chip_implementations::CommError;
+use crate::d_peripherals::chip_implementations::{Addressable, CommError};
 use crate::d_peripherals::chip_map;
 use crate::{d_log::dlogger::DLogger, d_info};  // Logging
 
@@ -20,33 +20,36 @@ impl From<CommError> for ChipError {
 // Generic I2C trait definitions
 #[allow(async_fn_in_trait)]  // Have to surpress warning, or else have to explicitely define output as a future, which is cumbersome
 pub trait CommProvider {
-    async fn write_read(&self, i2c_address: u8, reg: u8, reg_vals: &mut [u8]) -> Result<(), CommError>;  
-    async fn write(&self, i2c_address: u8, reg: u8, reg_val: u8) -> Result<(), CommError>;
+    async fn write_read(&self, reg: u8, reg_vals: &mut [u8]) -> Result<(), CommError>;  
+    async fn write(&self, reg: u8, reg_val: u8) -> Result<(), CommError>;
 }
 
 // Struct definition
-pub struct Chip<I2C, MAP=chip_map::NoFieldMap> {
-    pub i2c: I2C,  // Can be a mutex (supported) or an I2C bus (not supported)
-    pub i2c_addr: u8,
+pub struct Chip<COMM, MAP=chip_map::NoFieldMap> {
+    pub comm: COMM,  // Can be a mutex (supported) or an I2C bus (not supported yet)
     pub _map: PhantomData<MAP>,
 }
 
-impl <I2C> Chip<I2C, chip_map::NoFieldMap> {
-    pub fn new_generic(i2c: I2C, i2c_addr: u8) -> Self {
-        Self { i2c, i2c_addr: i2c_addr, _map: PhantomData }
+impl <I2C, MAP> Chip<I2C, MAP> 
+where
+    I2C: CommProvider + Addressable,
+{
+    pub fn new_i2c(mut i2c: I2C, i2c_addr: u8) -> Self {
+        i2c.set_address(i2c_addr);
+        Self {comm: i2c, _map: PhantomData }
     }
 }
 
 // MUTEX implementations for I2C generic - Any MAP
-impl<Comm, MAP,> Chip<Comm, MAP> 
+impl<COMM, MAP,> Chip<COMM, MAP> 
 where
-    Comm: CommProvider,
+    COMM: CommProvider,
 {
 
     // Basic function to read multiple registers
     pub async fn read_regs(&self, reg: u8, reg_values: &mut [u8]) -> Result<(), ChipError> {
         
-        self.i2c.write_read(self.i2c_addr, reg, reg_values).await?;
+        self.comm.write_read(reg, reg_values).await?;
 
         let mut reg_idx = 0;
         for reg_value in reg_values.iter() {
@@ -58,7 +61,7 @@ where
 
     // Basic function to write a single register
     pub async fn write_reg(&self, reg: u8, reg_val: u8) -> Result<(), ChipError> {
-        self.i2c.write(self.i2c_addr, reg, reg_val).await?;
+        self.comm.write(reg, reg_val).await?;
         d_info!("Write Register: 0x{=u8:X}, {=u8:b}, 0x{=u8:X}, {}", reg, reg_val, reg_val, reg_val);
         Ok(())
     }

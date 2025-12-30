@@ -6,6 +6,7 @@ use phf::Map;  // Efficient map for register maps
 use phf_macros::phf_map;
 
 use crate::d_peripherals::chip::{Chip, CommProvider, ChipError};
+use crate::d_peripherals::chip_implementations::Addressable;
 use crate::d_peripherals::chip_map::{Field, FieldMapProvider};
 use crate::{d_log::dlogger::DLogger, d_info};  // Logging
 
@@ -39,17 +40,17 @@ impl <I2C, ChipGeneric> BME680<I2C, ChipGeneric> {
 // When Chip is defined using the BME680 FieldMap
 impl <I2C> BME680<I2C, Chip<I2C, BME680FieldMap>> 
 where
-    I2C: CommProvider,
+    I2C: CommProvider + Addressable,
 {
 
     // Constructor for when a Chip is not given
-    pub async fn new<T: Into<Option<u8>>>(i2c: I2C, i2c_addr: T) -> Result<Self, BME680Error> {
+    pub async fn new_i2c<T: Into<Option<u8>>>(i2c: I2C, i2c_addr: T) -> Result<Self, BME680Error> {
 
         // Default i2c address
         let i2c_addr = i2c_addr.into();
         let i2c_addr = i2c_addr.unwrap_or(Self::DEFAULT_I2C_ADDRESS);
 
-        let chip: Chip<I2C, BME680FieldMap> = Chip{i2c, i2c_addr, _map: PhantomData};
+        let chip: Chip<I2C, BME680FieldMap> = Chip::new_i2c(i2c, i2c_addr);
 
         let mut this = Self {
             chip,
@@ -63,7 +64,12 @@ where
 
         Ok(this)
     }
+}
 
+impl <I2C> BME680<I2C, Chip<I2C, BME680FieldMap>> 
+where
+    I2C: CommProvider
+{
     // Set a wait profile for the gas sensor
     pub async fn set_gas_wait(&mut self, wait_time_ms: u8, profile_num: u8) -> Result<(), BME680Error> {
         let mut buf: String<16> = String::new();
