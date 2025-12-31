@@ -21,46 +21,46 @@ impl From<ChipError> for TSL2591Error {
     fn from(err: ChipError) -> Self {TSL2591Error::BusError(err)}
 }
 
-pub struct TSL2591<I2C, ChipGeneric=Chip<I2C, TSL2591FieldMap>> {
+pub struct TSL2591<COMM, ChipGeneric=Chip<COMM, TSL2591FieldMap>> {
     pub chip: ChipGeneric,
     enabled: bool,
-    pub _i2c: PhantomData<I2C>,
+    pub _comm: PhantomData<COMM>,
     pub interrupt_pin: Option<u16>,
 }
 
-impl <I2C, ChipGeneric> TSL2591<I2C, ChipGeneric> {
+impl <COMM, ChipGeneric> TSL2591<COMM, ChipGeneric> {
     pub const DEFAULT_I2C_ADDRESS: u8 = 0x29;
     pub const WHO_AM_I_REG: u8 = 0x12;
     pub const WHO_AM_I_VAL: u8 = 0x50;
 }
 
-impl <I2C> TSL2591<I2C, Chip<I2C, TSL2591FieldMap>> 
+impl <COMM> TSL2591<COMM, Chip<COMM, TSL2591FieldMap>> 
 where
-    I2C: CommProvider + Addressable,
+    COMM: CommProvider + Addressable,
 {
     // Constructor for when a Chip is not given
-    pub fn new_i2c<T: Into<Option<u8>>>(i2c: I2C, i2c_addr: T) -> Result<Self, TSL2591Error> {
+    pub fn new_i2c<T: Into<Option<u8>>>(i2c: COMM, i2c_addr: T) -> Result<Self, TSL2591Error> {
 
         // Default i2c address
         let i2c_addr = i2c_addr.into();
         let i2c_addr = i2c_addr.unwrap_or(Self::DEFAULT_I2C_ADDRESS);
 
-        let chip: Chip<I2C, TSL2591FieldMap> = Chip::new_i2c(i2c, i2c_addr);
+        let chip: Chip<COMM, TSL2591FieldMap> = Chip::new_i2c(i2c, i2c_addr);
 
         d_info!("Constructing new TSL2591 sensor");
         let this = Self {
                                        chip,
                                        enabled: false,
-                                       _i2c: PhantomData,
+                                       _comm: PhantomData,
                                        interrupt_pin: Some(0),
                                       };
         Ok(this)
     }
 }
 
-impl <I2C> TSL2591<I2C, Chip<I2C, TSL2591FieldMap>> 
+impl <COMM> TSL2591<COMM, Chip<COMM, TSL2591FieldMap>> 
 where
-    I2C: CommProvider,
+    COMM: CommProvider,
 {
     // Initialize the system by checking the WHOAMI register
     pub async fn initialize(&mut self) -> Result<bool, TSL2591Error> {

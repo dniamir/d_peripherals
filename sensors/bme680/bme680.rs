@@ -22,42 +22,42 @@ impl From<ChipError> for BME680Error {
     fn from(err: ChipError) -> Self {BME680Error::BusError(err)}
 }
 
-pub struct BME680<I2C, ChipGeneric=Chip<I2C, BME680FieldMap>> {
+pub struct BME680<COMM, ChipGeneric=Chip<COMM, BME680FieldMap>> {
     // pub chip: Chip<I2C, Bme680FieldMap>,
     pub chip: ChipGeneric,
     pub cal_codes: CalCodes,
     pub temp_comp: i32,
     pub t_fine: i32,
-    pub _i2c: PhantomData<I2C>,
+    pub _comm: PhantomData<COMM>,
 }
 
-impl <I2C, ChipGeneric> BME680<I2C, ChipGeneric> {
+impl <COMM, ChipGeneric> BME680<COMM, ChipGeneric> {
     pub const DEFAULT_I2C_ADDRESS: u8 = 0x76;
     pub const WHO_AM_I_REG: u8 = 0xD0;
     pub const WHO_AM_I_VAL: u8 = 0x61;
 }
 
 // When Chip is defined using the BME680 FieldMap
-impl <I2C> BME680<I2C, Chip<I2C, BME680FieldMap>> 
+impl <COMM> BME680<COMM, Chip<COMM, BME680FieldMap>> 
 where
-    I2C: CommProvider + Addressable,
+    COMM: CommProvider + Addressable,
 {
 
     // Constructor for when a Chip is not given
-    pub async fn new_i2c<T: Into<Option<u8>>>(i2c: I2C, i2c_addr: T) -> Result<Self, BME680Error> {
+    pub async fn new_i2c<T: Into<Option<u8>>>(i2c: COMM, i2c_addr: T) -> Result<Self, BME680Error> {
 
         // Default i2c address
         let i2c_addr = i2c_addr.into();
         let i2c_addr = i2c_addr.unwrap_or(Self::DEFAULT_I2C_ADDRESS);
 
-        let chip: Chip<I2C, BME680FieldMap> = Chip::new_i2c(i2c, i2c_addr);
+        let chip: Chip<COMM, BME680FieldMap> = Chip::new_i2c(i2c, i2c_addr);
 
         let mut this = Self {
             chip,
             cal_codes: CalCodes::default(),
             temp_comp: 0,
             t_fine: 0,
-            _i2c: PhantomData
+            _comm: PhantomData
         };
 
         this.read_cal_codes().await?;
@@ -66,9 +66,9 @@ where
     }
 }
 
-impl <I2C> BME680<I2C, Chip<I2C, BME680FieldMap>> 
+impl <COMM> BME680<COMM, Chip<COMM, BME680FieldMap>> 
 where
-    I2C: CommProvider
+    COMM: CommProvider
 {
     // Set a wait profile for the gas sensor
     pub async fn set_gas_wait(&mut self, wait_time_ms: u8, profile_num: u8) -> Result<(), BME680Error> {

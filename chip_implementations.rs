@@ -10,7 +10,7 @@ use crate::{d_log::dlogger::DLogger, d_info};  // Logging
 
 // Trait defined for embassy nRF52840 I2C mutex
 pub trait Addressable {
-    fn set_address(&mut self, addr: u8);
+    fn set_address(&mut self, address: u8);
 }
 
 #[derive(Clone)]
@@ -19,8 +19,8 @@ pub struct I2CMutexWrapper {
     pub i2c_address: Option<u8>,
 }
 impl Addressable for I2CMutexWrapper {
-    fn set_address(&mut self, addr: u8) {
-        self.i2c_address = Some(addr);
+    fn set_address(&mut self, address: u8) {
+        self.i2c_address = Some(address);
     }
 }
 
@@ -69,7 +69,7 @@ where
 }
 
 
-// write_read and write for nRF52840
+/// Implementation of CommProvider for I2C mutex on nRF52840
 impl CommProvider for I2CMutexWrapper {
     async fn write_read(&self, reg: u8, reg_vals: &mut [u8]) -> Result<(), CommError> {
 
