@@ -1,5 +1,4 @@
 use heapless::String;
-use core::marker::PhantomData;
 use core::fmt::Write;
 
 use phf::Map;  // Efficient map for register maps
@@ -22,23 +21,23 @@ impl From<ChipError> for BME680Error {
     fn from(err: ChipError) -> Self {BME680Error::BusError(err)}
 }
 
-pub struct BME680<COMM, ChipGeneric=Chip<COMM, BME680FieldMap>> {
-    // pub chip: Chip<I2C, Bme680FieldMap>,
-    pub chip: ChipGeneric,
+type BMEChip<COMM> = Chip<COMM, BME680FieldMap>;
+
+pub struct BME680<COMM> {
+    pub chip: BMEChip<COMM>,
     pub cal_codes: CalCodes,
     pub temp_comp: i32,
     pub t_fine: i32,
-    pub _comm: PhantomData<COMM>,
 }
 
-impl <COMM, ChipGeneric> BME680<COMM, ChipGeneric> {
+impl <COMM> BME680<COMM> {
     pub const DEFAULT_I2C_ADDRESS: u8 = 0x76;
     pub const WHO_AM_I_REG: u8 = 0xD0;
     pub const WHO_AM_I_VAL: u8 = 0x61;
 }
 
 // When Chip is defined using the BME680 FieldMap
-impl <COMM> BME680<COMM, Chip<COMM, BME680FieldMap>> 
+impl <COMM> BME680<COMM> 
 where
     COMM: CommProvider + Addressable,
 {
@@ -50,14 +49,13 @@ where
         let i2c_addr = i2c_addr.into();
         let i2c_addr = i2c_addr.unwrap_or(Self::DEFAULT_I2C_ADDRESS);
 
-        let chip: Chip<COMM, BME680FieldMap> = Chip::new_i2c(i2c, i2c_addr);
+        let chip = BMEChip::new_i2c(i2c, i2c_addr);
 
         let mut this = Self {
             chip,
             cal_codes: CalCodes::default(),
             temp_comp: 0,
             t_fine: 0,
-            _comm: PhantomData
         };
 
         this.read_cal_codes().await?;
@@ -66,7 +64,7 @@ where
     }
 }
 
-impl <COMM> BME680<COMM, Chip<COMM, BME680FieldMap>> 
+impl <COMM> BME680<COMM> 
 where
     COMM: CommProvider
 {

@@ -13,17 +13,6 @@ pub trait Addressable {
     fn set_address(&mut self, address: u8);
 }
 
-#[derive(Clone)]
-pub struct I2CMutexWrapper {
-    pub mutex: &'static Mutex<ThreadModeRawMutex, Twim<'static>>,
-    pub i2c_address: Option<u8>,
-}
-impl Addressable for I2CMutexWrapper {
-    fn set_address(&mut self, address: u8) {
-        self.i2c_address = Some(address);
-    }
-}
-
 #[derive(Debug)]
 pub enum CommError {
     NotFound,
@@ -34,6 +23,17 @@ pub enum CommError {
 impl From<TwimError> for CommError {
     fn from(err: TwimError) -> Self {
         CommError::TwimError(err)
+    }
+}
+
+#[derive(Clone)]
+pub struct NRFI2CMutex {
+    pub mutex: &'static Mutex<ThreadModeRawMutex, Twim<'static>>,
+    pub i2c_address: Option<u8>,
+}
+impl Addressable for NRFI2CMutex {
+    fn set_address(&mut self, address: u8) {
+        self.i2c_address = Some(address);
     }
 }
 
@@ -70,7 +70,7 @@ where
 
 
 /// Implementation of CommProvider for I2C mutex on nRF52840
-impl CommProvider for I2CMutexWrapper {
+impl CommProvider for NRFI2CMutex {
     async fn write_read(&self, reg: u8, reg_vals: &mut [u8]) -> Result<(), CommError> {
 
         // Get TWIM from MUTEX

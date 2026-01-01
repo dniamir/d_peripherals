@@ -1,5 +1,3 @@
-use core::marker::PhantomData;
-
 use phf::Map;  // Efficient map for register maps
 use phf_macros::phf_map;
 
@@ -21,20 +19,21 @@ impl From<ChipError> for TSL2591Error {
     fn from(err: ChipError) -> Self {TSL2591Error::BusError(err)}
 }
 
-pub struct TSL2591<COMM, ChipGeneric=Chip<COMM, TSL2591FieldMap>> {
-    pub chip: ChipGeneric,
+type TSLChip<COMM> = Chip<COMM, TSL2591FieldMap>;
+
+pub struct TSL2591<COMM> {
+    pub chip: TSLChip<COMM>,
     enabled: bool,
-    pub _comm: PhantomData<COMM>,
     pub interrupt_pin: Option<u16>,
 }
 
-impl <COMM, ChipGeneric> TSL2591<COMM, ChipGeneric> {
+impl <COMM> TSL2591<COMM> {
     pub const DEFAULT_I2C_ADDRESS: u8 = 0x29;
     pub const WHO_AM_I_REG: u8 = 0x12;
     pub const WHO_AM_I_VAL: u8 = 0x50;
 }
 
-impl <COMM> TSL2591<COMM, Chip<COMM, TSL2591FieldMap>> 
+impl <COMM> TSL2591<COMM> 
 where
     COMM: CommProvider + Addressable,
 {
@@ -45,20 +44,19 @@ where
         let i2c_addr = i2c_addr.into();
         let i2c_addr = i2c_addr.unwrap_or(Self::DEFAULT_I2C_ADDRESS);
 
-        let chip: Chip<COMM, TSL2591FieldMap> = Chip::new_i2c(i2c, i2c_addr);
+        let chip = TSLChip::new_i2c(i2c, i2c_addr);
 
         d_info!("Constructing new TSL2591 sensor");
         let this = Self {
                                        chip,
                                        enabled: false,
-                                       _comm: PhantomData,
                                        interrupt_pin: Some(0),
                                       };
         Ok(this)
     }
 }
 
-impl <COMM> TSL2591<COMM, Chip<COMM, TSL2591FieldMap>> 
+impl <COMM> TSL2591<COMM> 
 where
     COMM: CommProvider,
 {
@@ -76,7 +74,7 @@ where
         DLogger::release();
 
         if id == Self::WHO_AM_I_VAL {
-            d_info!("TSL connection suffessful");
+            d_info!("TSL connection successful");
             Ok(true)
         } else {
             d_info!("TSL connection failed");
@@ -176,17 +174,6 @@ where
         Ok((light_fs, light_ir, light_vs))
 
     }
-
-    // fn write_tsl_field(&mut self, reg_str: &str, reg_val: u8) -> Result<(), E> {
-    //     let reg_dets = TSL2591FieldMap::get_field(reg_str)?;
-    //     self.chip.write_field(self::COMMAND_BIT | reg_dets.reg, val, reg_dets.offset, reg_dets.bits);
-    // }
-
-    // fn read_tsl_field(&mut self, reg: u8) -> Result<u8, E> {
-    //     let mut buffer = [0u8; 1];
-    //     self.chip.write_read(self.address, &[Self::COMMAND_BIT | reg], &mut buffer)?;
-    //     Ok(buffer[0])
-    // }
 }
 
 pub struct TSL2591FieldMap;
@@ -202,7 +189,8 @@ impl FieldMapProvider for TSL2591FieldMap {
         let field = FIELD_MAP.get(name)?;
 
         // The *field tells rust to copy the remaining fields
-        let new_field = Field {reg: field.reg | Self::CMD_BIT | Self::TRANSACTION, ..*field};
+        let reg = field.reg | Self::CMD_BIT | Self::TRANSACTION;
+        let new_field = Field {reg: reg, ..*field};
 
         Some(new_field)
     }
