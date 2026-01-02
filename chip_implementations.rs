@@ -118,7 +118,7 @@ pub struct ShadowComm<COMM> {
     
     pub provider: COMM,                         // A normal comm provider, like the I2C mutex
     pub shadow_registers: RefCell<[u8; 256]>,   // The shadow register map
-    dirty_bits: RefCell<[u8; 256]>,             // Tracks registers that have been updated
+    pub dirty_bits: RefCell<[u8; 256]>,             // Tracks registers that have been updated
 }
 
 impl<COMM> ShadowComm<COMM> {
@@ -126,8 +126,8 @@ impl<COMM> ShadowComm<COMM> {
     /// Checks if a specific register has been modified 
     pub fn is_dirty(&self, reg: u8) -> bool {
         let reg_idx = reg as usize;
-        let byte = self.dirty_bits.borrow()[reg_idx / 8];
-        (byte & (1 << (reg_idx % 8))) != 0
+        let byte = self.dirty_bits.borrow()[reg_idx];
+        byte != 0
     }
 
     // Resets the entire tracking back to clean
@@ -186,7 +186,8 @@ where
 
             // Attempt the hardware write
             self.true_raw_write(reg as u8, reg_val).await?;
-        }
+
+            d_info!("REAL Write Register: 0x{=u8:X}, {=u8:b}, 0x{=u8:X}, {}", reg as u8, reg_val, reg_val, reg_val);        }
 
         Ok(())
     }
