@@ -79,8 +79,10 @@ where
     /// Unlike other functions, this will perform immediately
     pub async fn soft_reset(&mut self) -> Result<(), IS31FL3193Error>  {
         d_info!("Performing Soft Reset");
+        DLogger::hold();
         self.chip.comm.true_raw_write(0x2F, 0).await?;
         self.chip.comm.reset_shadow();
+        DLogger::release();
         Ok(())
     }
 
@@ -91,22 +93,26 @@ where
         d_info!("Updating LEDs");
 
         // Ignore reset bit
+        DLogger::hold();
         self.chip.comm.dirty_bits.borrow_mut()[0x2F] = 0;
         
         self.chip.comm.sync_all().await?;
         self.chip.comm.true_raw_write(0x1C, 0b000).await?;  // Update time registers
         self.chip.comm.true_raw_write(0x1D, 0b111).await?;   // Enable LED controls
         self.chip.comm.true_raw_write(0x07, 0x0).await?;   // PWM update registers
+        DLogger::release();
         Ok(())
     }
 
     /// Set the color and the brightness of the driver
     /// each path enables one of three paths, which should be connected to
     /// the blue LED, red LED, or green LED
-    pub async fn set_color(&mut self, color: LedColor, brightness_percent: u8, update: bool) -> Result<(), IS31FL3193Error>  {
+    pub async fn set_color(&mut self, color: LedColor, brightness_per: u8) -> Result<(), IS31FL3193Error>  {
         d_info!("Setting LED color");
-        let brightness = ((brightness_percent as u16 * 255) / 100) as u8;
+        let brightness = ((brightness_per as u16 * 255) / 100) as u8;
 
+        DLogger::hold();
+        
         match color {
             LedColor::RED => {
                 self.chip.write_reg_str("PWM1", brightness).await?;
@@ -142,6 +148,8 @@ where
             }
         }
 
+        DLogger::release();
+
         Ok(())
     }
 
@@ -149,6 +157,8 @@ where
     pub async fn set_timing(&mut self, t0: u8, t1: u8, t2: u8, t3: u8, t4: u8) -> Result<(), IS31FL3193Error>  {
         
         d_info!("Setting LED pulse timing");
+
+        DLogger::hold();
 
         self.chip.write_field_str("T01", t0).await?;  // Set T0 in shot mode
         self.chip.write_field_str("T02", t0).await?;  // Set T0 in shot mode
@@ -169,6 +179,8 @@ where
         self.chip.write_field_str("T41", t4).await?;  // Set T4 in shot mode
         self.chip.write_field_str("T42", t4).await?;  // Set T4 in shot mode
         self.chip.write_field_str("T43", t4).await?;  // Set T4 in shot mode
+
+        DLogger::release();
 
         Ok(())
     }
