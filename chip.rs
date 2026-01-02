@@ -47,12 +47,12 @@ where
 {
 
     // Basic function to read multiple registers
-    pub async fn read_regs(&self, reg: u8, reg_values: &mut [u8]) -> Result<(), ChipError> {
+    pub async fn read_regs(&self, reg: u8, reg_vals: &mut [u8]) -> Result<(), ChipError> {
         
-        self.comm.write_read(reg, reg_values).await?;
+        self.comm.write_read(reg, reg_vals).await?;
 
         let mut reg_idx = 0;
-        for reg_value in reg_values.iter() {
+        for reg_value in reg_vals.iter() {
             d_info!("Read Register: 0x{=u8:X}, {=u8:b}, 0x{=u8:X}, {}", reg + reg_idx, reg_value, reg_value, reg_value);
             reg_idx += 1;
         }
@@ -130,13 +130,13 @@ where
 {
 
     // Basic function to read multiple registers using a string name
-    pub async fn read_regs_str(&self, reg_str: &str, reg_values: &mut [u8]) -> Result<(), ChipError> {
+    pub async fn read_regs_str(&self, reg_str: &str, reg_vals: &mut [u8]) -> Result<(), ChipError> {
         
         // Get field details
         let reg_dets = MAP::get_read_field(reg_str).ok_or(ChipError::FieldNotFound)?;
         
         // Read the registers
-        self.read_regs(reg_dets.reg, reg_values).await?;
+        self.read_regs(reg_dets.reg, reg_vals).await?;
         Ok(())
     }
 
