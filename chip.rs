@@ -61,8 +61,8 @@ where
 
     // Basic function to write a single register
     pub async fn write_reg(&self, reg: u8, reg_val: u8) -> Result<(), ChipError> {
-        self.comm.write(reg, reg_val).await?;
         d_info!("Write Register: 0x{=u8:X}, {=u8:b}, 0x{=u8:X}, {}", reg, reg_val, reg_val, reg_val);
+        self.comm.write(reg, reg_val).await?;
         Ok(())
     }
 
@@ -87,6 +87,7 @@ where
         // Read the register
         DLogger::hold();
         let curr_field_val = self.read_reg(field_reg).await?;
+        DLogger::release();
 
         // Clear the field
         let mask = ((1u32 << field_bits) - 1) << field_offset;
@@ -95,10 +96,10 @@ where
         let field_val = (cleared | inserted) as u8;
     
         // Write the register
+        d_info!("Write Field: 0x{=u8:X}, {=u8:b}, 0x{=u8:X}, {}", field_reg, field_val, field_val, field_val);
+        DLogger::hold();
         self.write_reg(field_reg, field_val).await?;
         DLogger::release();
-
-        d_info!("Write Field: 0x{=u8:X}, {=u8:b}, 0x{=u8:X}, {}", field_reg, field_val, field_val, field_val);
 
         Ok(())
     }
@@ -160,10 +161,10 @@ where
         let reg_dets = MAP::get_write_field(reg_str).ok_or(ChipError::FieldNotFound)?;
         
         // Write the register
+        d_info!("Write Register: {}, {=u8:b}, 0x{=u8:X}, {}", reg_str, reg_val, reg_val, reg_val);
         DLogger::hold();
         self.write_reg(reg_dets.reg, reg_val).await?;
         DLogger::release();
-        d_info!("Write Register: {}, {=u8:b}, 0x{=u8:X}, {}", reg_str, reg_val, reg_val, reg_val);
         Ok(())
     }
 
@@ -196,11 +197,10 @@ where
         let field_bits: u8 = field_dets.bits as u8;
 
         // Write the field
+        d_info!("Write Field: {}, {=u8:b}, 0x{=u8:X}, {}", field, field_val, field_val, field_val);
         DLogger::hold();
         self.write_field(field_reg, field_offset, field_bits, field_val).await?;
         DLogger::release();
-
-        d_info!("Write Field: {}, {=u8:b}, 0x{=u8:X}, {}", field, field_val, field_val, field_val);
 
         Ok(())
     }

@@ -6,7 +6,7 @@ use embassy_nrf::twim::{Twim, Error as TwimError};
 use core::future::Future;
 
 use crate::d_peripherals::chip::CommProvider;
-use crate::{d_log::dlogger::DLogger, d_info};  // Logging
+use crate::{d_log::dlogger::DLogger, d_info, d_force};  // Logging
 
 
 // Trait defined for embassy nRF52840 I2C mutex
@@ -53,14 +53,14 @@ where
     let _result = match timeout_func {
         Ok(comm_result) => {
             if comm_result.is_err() { 
-                d_info!("Comm Error");
+                d_force!("----Comm Error----");
             } 
             else { 
                 d_info!("Comm Success");
             }
         }
         Err(_) => {
-            d_info!("Comm timeout");
+            d_force!("----Comm timeout----");
             Timer::after_millis(recovery_delay_ms).await;
         }
     };
@@ -185,9 +185,10 @@ where
             if !self.is_dirty(reg as u8) { continue; }
 
             // Attempt the hardware write
+            d_info!("Write Register: 0x{=u8:X}, {=u8:b}, 0x{=u8:X}, {}", reg as u8, reg_val, reg_val, reg_val);        
             self.true_raw_write(reg as u8, reg_val).await?;
 
-            d_info!("REAL Write Register: 0x{=u8:X}, {=u8:b}, 0x{=u8:X}, {}", reg as u8, reg_val, reg_val, reg_val);        }
+        }
 
         Ok(())
     }
