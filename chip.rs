@@ -76,7 +76,7 @@ where
     pub async fn write_reg(&self, reg: u8, reg_val: u8) -> Result<(), ChipError> {
             
         // Log write
-        d_info!("Write Register: 0x{=u8:X}, {=u8:b}, 0x{=u8:X}, {}", reg, reg_val, reg_val, reg_val);
+        d_info!("Write Register: 0x{:X}, {:b}, 0x{:X}, {}", reg, reg_val, reg_val, reg_val);
 
         // Read reg
         DLogger::hold();
@@ -97,7 +97,7 @@ where
         DLogger::release();
 
         let reg_value = reg_vals[0];
-        d_info!("Read Register: 0x{=u8:X}, {=u8:b}, 0x{=u8:X}, {}", reg, reg_value, reg_value, reg_value);
+        d_info!("Read Register: 0x{:X}, {:b}, 0x{:X}, {}", reg, reg_value, reg_value, reg_value);
         Ok(reg_value)
     }
 
@@ -116,7 +116,7 @@ where
         let field_val = (cleared | inserted) as u8;
     
         // Write the register
-        d_info!("Write Field: 0x{=u8:X}, {=u8:b}, 0x{=u8:X}, {}", field_reg, field_val, field_val, field_val);
+        d_info!("Write Field: 0x{:X}, {:b}, 0x{:X}, {}", field_reg, field_val, field_val, field_val);
         DLogger::hold();
         self.write_reg(field_reg, field_val).await?;
         DLogger::release();
@@ -136,7 +136,7 @@ where
         let mask = (((1u32 << field_bits) - 1) << field_offset) as u8;
         let field_val = (reg_val & mask) >> field_offset;
 
-        d_info!("Read Field: 0x{=u8:X}, {=u8:b}, 0x{=u8:X}, {}", field_reg, field_val, field_val, field_val);
+        d_info!("Read Field: 0x{:X}, {:b}, 0x{:X}, {}", field_reg, field_val, field_val, field_val);
 
         Ok(field_val)
     }
@@ -170,7 +170,7 @@ where
         DLogger::hold();
         let reg_value = self.read_reg(reg_dets.reg).await?;
         DLogger::release();
-        d_info!("Read Register: {}, {=u8:b}, 0x{=u8:X}, {}", reg_str, reg_value, reg_value, reg_value);
+        d_info!("Read Register: {}, {:b}, 0x{:X}, {}", reg_str, reg_value, reg_value, reg_value);
         Ok(reg_value)
     }
 
@@ -181,7 +181,7 @@ where
         let reg_dets = MAP::get_write_field(reg_str).ok_or(ChipError::FieldNotFound)?;
         
         // Write the register
-        d_info!("Write Register: {}, {=u8:b}, 0x{=u8:X}, {}", reg_str, reg_val, reg_val, reg_val);
+        d_info!("Write Register: {}, {:b}, 0x{:X}, {}", reg_str, reg_val, reg_val, reg_val);
         DLogger::hold();
         self.write_reg(reg_dets.reg, reg_val).await?;
         DLogger::release();
@@ -202,7 +202,7 @@ where
         let field_val = self.read_field(field_reg, field_offset, field_bits).await.unwrap();
         DLogger::release();
 
-        d_info!("Read Field: {}, {=u8:b}, 0x{=u8:X}, {}", field, field_val, field_val, field_val);
+        d_info!("Read Field: {}, {:b}, 0x{:X}, {}", field, field_val, field_val, field_val);
 
         Ok(field_val)
     }
@@ -217,7 +217,7 @@ where
         let field_bits: u8 = field_dets.bits as u8;
 
         // Write the field
-        d_info!("Write Field: {}, {=u8:b}, 0x{=u8:X}, {}", field, field_val, field_val, field_val);
+        d_info!("Write Field: {}, {:b}, 0x{:X}, {}", field, field_val, field_val, field_val);
         DLogger::hold();
         self.write_field(field_reg, field_offset, field_bits, field_val).await?;
         DLogger::release();
