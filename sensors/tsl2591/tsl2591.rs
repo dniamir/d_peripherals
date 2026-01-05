@@ -202,42 +202,42 @@ impl FieldMapProvider for TSL2591FieldMap {
 
 static FIELD_MAP: Map<&'static str, Field> = phf_map! {
     // Enable Register
-    "ENABLE" => Field { reg: 0x00, offset: 0, bits: 8, writable: true },
-    "NPIEN" => Field { reg: 0x00, offset: 7, bits: 1, writable: true },
-    "SAI" => Field { reg: 0x00, offset: 6, bits: 1, writable: true },
-    "AIEN" => Field { reg: 0x00, offset: 4, bits: 1, writable: true },
-    "AEN" => Field { reg: 0x00, offset: 1, bits: 1, writable: true },
-    "PON" => Field { reg: 0x00, offset: 0, bits: 1, writable: true },
+    "ENABLE" => Field { reg: 0x00, offset: 0, bits: 8, writable: true, signed: false, },
+    "NPIEN" => Field { reg: 0x00, offset: 7, bits: 1, writable: true, signed: false, },
+    "SAI" => Field { reg: 0x00, offset: 6, bits: 1, writable: true, signed: false, },
+    "AIEN" => Field { reg: 0x00, offset: 4, bits: 1, writable: true, signed: false, },
+    "AEN" => Field { reg: 0x00, offset: 1, bits: 1, writable: true, signed: false, },
+    "PON" => Field { reg: 0x00, offset: 0, bits: 1, writable: true, signed: false, },
 
     // Control Register
-    "CONTROL" => Field { reg: 0x01, offset: 0, bits: 8, writable: true },
-    "ATIME" => Field { reg: 0x01, offset: 0, bits: 3, writable: true },
-    "AGAIN" => Field { reg: 0x01, offset: 4, bits: 2, writable: true },
-    "SRESET" => Field { reg: 0x01, offset: 7, bits: 1, writable: true },
+    "CONTROL" => Field { reg: 0x01, offset: 0, bits: 8, writable: true, signed: false, },
+    "ATIME" => Field { reg: 0x01, offset: 0, bits: 3, writable: true, signed: false, },
+    "AGAIN" => Field { reg: 0x01, offset: 4, bits: 2, writable: true, signed: false, },
+    "SRESET" => Field { reg: 0x01, offset: 7, bits: 1, writable: true, signed: false, },
 
     // ALS Data Register
-    "C0DATAL" => Field { reg: 0x14, offset: 0, bits: 8, writable: false },
-    "C0DATAH" => Field { reg: 0x15, offset: 0, bits: 8, writable: false },
-    "C1DATAL" => Field { reg: 0x16, offset: 0, bits: 8, writable: false },
-    "C1DATAH" => Field { reg: 0x17, offset: 0, bits: 8, writable: false },
+    "C0DATAL" => Field { reg: 0x14, offset: 0, bits: 8, writable: true, signed: false, },
+    "C0DATAH" => Field { reg: 0x15, offset: 0, bits: 8, writable: true, signed: false, },
+    "C1DATAL" => Field { reg: 0x16, offset: 0, bits: 8, writable: true, signed: false, },
+    "C1DATAH" => Field { reg: 0x17, offset: 0, bits: 8, writable: true, signed: false, },
 
     // Interrupts and Persists
-    "PERSIST" => Field { reg: 0x0C, offset: 0, bits: 4, writable: true },
-    "AILTL" => Field { reg: 0x04, offset: 0, bits: 8, writable: true },
-    "AILTH" => Field { reg: 0x05, offset: 0, bits: 8, writable: true },
-    "AIHTL" => Field { reg: 0x06, offset: 0, bits: 8, writable: true },
-    "AIHTH" => Field { reg: 0x07, offset: 0, bits: 8, writable: true },
-    "NPAILTL" => Field { reg: 0x08, offset: 0, bits: 8, writable: true },
-    "NPAILTH" => Field { reg: 0x09, offset: 0, bits: 8, writable: true },
-    "NPAIHTL" => Field { reg: 0x0A, offset: 0, bits: 8, writable: true },
-    "NPAIHTH" => Field { reg: 0x0B, offset: 0, bits: 8, writable: true },
+    "PERSIST" => Field { reg: 0x0C, offset: 0, bits: 4, writable: true, signed: false, },
+    "AILTL" => Field { reg: 0x04, offset: 0, bits: 8, writable: true, signed: false, },
+    "AILTH" => Field { reg: 0x05, offset: 0, bits: 8, writable: true, signed: false, },
+    "AIHTL" => Field { reg: 0x06, offset: 0, bits: 8, writable: true, signed: false, },
+    "AIHTH" => Field { reg: 0x07, offset: 0, bits: 8, writable: true, signed: false, },
+    "NPAILTL" => Field { reg: 0x08, offset: 0, bits: 8, writable: true, signed: false, },
+    "NPAILTH" => Field { reg: 0x09, offset: 0, bits: 8, writable: true, signed: false, },
+    "NPAIHTL" => Field { reg: 0x0A, offset: 0, bits: 8, writable: true, signed: false, },
+    "NPAIHTH" => Field { reg: 0x0B, offset: 0, bits: 8, writable: true, signed: false, },
 
     // Status Register
-    "STATUS" => Field { reg: 0x13, offset: 0, bits: 8, writable: true },
-    "NPINTR" => Field { reg: 0x13, offset: 5, bits: 1, writable: true },
-    "AINT" => Field { reg: 0x13, offset: 4, bits: 1, writable: true },
-    "AVALID" => Field { reg: 0x13, offset: 0, bits: 1, writable: true },
+    "STATUS" => Field { reg: 0x13, offset: 0, bits: 8, writable: true, signed: false, },
+    "NPINTR" => Field { reg: 0x13, offset: 5, bits: 1, writable: true, signed: false, },
+    "AINT" => Field { reg: 0x13, offset: 4, bits: 1, writable: true, signed: false, },
+    "AVALID" => Field { reg: 0x13, offset: 0, bits: 1, writable: true, signed: false, },
 
     // ID Register
-    "ID" => Field { reg: 0x12, offset: 0, bits: 8, writable: false },
+    "ID" => Field { reg: 0x12, offset: 0, bits: 8, writable: true, signed: false, },
 };  

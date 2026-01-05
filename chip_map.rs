@@ -6,6 +6,7 @@ pub struct Field {
     pub offset: u8,
     pub bits: u8,
     pub writable: bool,
+    pub signed: bool,
 }
 
 // Trait for field map providers

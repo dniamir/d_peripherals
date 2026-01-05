@@ -200,49 +200,49 @@ impl FieldMapProvider for IS31FL3193FieldMap {
 
 // I2C Map - (SPI map is different)
 pub static FIELD_MAP: Map<&'static str, Field> = phf_map! {
-    "Shutdown" => Field { reg: 0x00, offset: 0, bits: 8, writable: true },
-    "EN" => Field { reg: 0x00, offset: 5, bits: 1, writable: true },
-    "SSD" => Field { reg: 0x00, offset: 0, bits: 1, writable: true },
+    "Shutdown" => Field { reg: 0x00, offset: 0, bits: 8, writable: true, signed: false, },
+    "EN" => Field { reg: 0x00, offset: 5, bits: 1, writable: true, signed: false, },
+    "SSD" => Field { reg: 0x00, offset: 0, bits: 1, writable: true, signed: false, },
 
-    "Breathing Control" => Field { reg: 0x01, offset: 0, bits: 8, writable: true },
-    "RM" => Field { reg: 0x01, offset: 5, bits: 1, writable: true },
-    "HT" => Field { reg: 0x01, offset: 4, bits: 1, writable: true },
-    "BME" => Field { reg: 0x01, offset: 2, bits: 1, writable: true },
-    "CSS" => Field { reg: 0x01, offset: 0, bits: 2, writable: true },
+    "Breathing Control" => Field { reg: 0x01, offset: 0, bits: 8, writable: true, signed: false, },
+    "RM" => Field { reg: 0x01, offset: 5, bits: 1, writable: true, signed: false, },
+    "HT" => Field { reg: 0x01, offset: 4, bits: 1, writable: true, signed: false, },
+    "BME" => Field { reg: 0x01, offset: 2, bits: 1, writable: true, signed: false, },
+    "CSS" => Field { reg: 0x01, offset: 0, bits: 2, writable: true, signed: false, },
 
-    "LED Mode" => Field { reg: 0x02, offset: 0, bits: 8, writable: true },
-    "RGB" => Field { reg: 0x02, offset: 5, bits: 1, writable: true },
+    "LED Mode" => Field { reg: 0x02, offset: 0, bits: 8, writable: true, signed: false, },
+    "RGB" => Field { reg: 0x02, offset: 5, bits: 1, writable: true, signed: false, },
 
-    "Current Setting" => Field { reg: 0x03, offset: 0, bits: 8, writable: true },
-    "CS" => Field { reg: 0x03, offset: 2, bits: 3, writable: true },
+    "Current Setting" => Field { reg: 0x03, offset: 0, bits: 8, writable: true, signed: false, },
+    "CS" => Field { reg: 0x03, offset: 2, bits: 3, writable: true, signed: false, },
 
-    "PWM1" => Field { reg: 0x04, offset: 0, bits: 8, writable: true },
-    "PWM2" => Field { reg: 0x05, offset: 0, bits: 8, writable: true },
-    "PWM3" => Field { reg: 0x06, offset: 0, bits: 8, writable: true },
+    "PWM1" => Field { reg: 0x04, offset: 0, bits: 8, writable: true, signed: false, },
+    "PWM2" => Field { reg: 0x05, offset: 0, bits: 8, writable: true, signed: false, },
+    "PWM3" => Field { reg: 0x06, offset: 0, bits: 8, writable: true, signed: false, },
 
-    "PWM Update" => Field { reg: 0x07, offset: 0, bits: 8, writable: true },
+    "PWM Update" => Field { reg: 0x07, offset: 0, bits: 8, writable: true, signed: false, },
 
-    "T01" => Field { reg: 0x0A, offset: 4, bits: 4, writable: true },
-    "T02" => Field { reg: 0x0B, offset: 4, bits: 4, writable: true },
-    "T03" => Field { reg: 0x0C, offset: 4, bits: 4, writable: true },
+    "T01" => Field { reg: 0x0A, offset: 4, bits: 4, writable: true, signed: false, },
+    "T02" => Field { reg: 0x0B, offset: 4, bits: 4, writable: true, signed: false, },
+    "T03" => Field { reg: 0x0C, offset: 4, bits: 4, writable: true, signed: false, },
 
-    "T11" => Field { reg: 0x10, offset: 5, bits: 3, writable: true },
-    "T12" => Field { reg: 0x11, offset: 5, bits: 3, writable: true },
-    "T13" => Field { reg: 0x12, offset: 5, bits: 3, writable: true },
+    "T11" => Field { reg: 0x10, offset: 5, bits: 3, writable: true, signed: false, },
+    "T12" => Field { reg: 0x11, offset: 5, bits: 3, writable: true, signed: false, },
+    "T13" => Field { reg: 0x12, offset: 5, bits: 3, writable: true, signed: false, },
 
-    "T21" => Field { reg: 0x10, offset: 1, bits: 4, writable: true },
-    "T22" => Field { reg: 0x11, offset: 1, bits: 4, writable: true },
-    "T23" => Field { reg: 0x12, offset: 1, bits: 4, writable: true },
+    "T21" => Field { reg: 0x10, offset: 1, bits: 4, writable: true, signed: false, },
+    "T22" => Field { reg: 0x11, offset: 1, bits: 4, writable: true, signed: false, },
+    "T23" => Field { reg: 0x12, offset: 1, bits: 4, writable: true, signed: false, },
 
-    "T31" => Field { reg: 0x16, offset: 5, bits: 3, writable: true },
-    "T32" => Field { reg: 0x17, offset: 5, bits: 3, writable: true },
-    "T33" => Field { reg: 0x18, offset: 5, bits: 3, writable: true },
+    "T31" => Field { reg: 0x16, offset: 5, bits: 3, writable: true, signed: false, },
+    "T32" => Field { reg: 0x17, offset: 5, bits: 3, writable: true, signed: false, },
+    "T33" => Field { reg: 0x18, offset: 5, bits: 3, writable: true, signed: false, },
 
-    "T41" => Field { reg: 0x16, offset: 1, bits: 4, writable: true },
-    "T42" => Field { reg: 0x17, offset: 1, bits: 4, writable: true },
-    "T43" => Field { reg: 0x18, offset: 1, bits: 4, writable: true },
+    "T41" => Field { reg: 0x16, offset: 1, bits: 4, writable: true, signed: false, },
+    "T42" => Field { reg: 0x17, offset: 1, bits: 4, writable: true, signed: false, },
+    "T43" => Field { reg: 0x18, offset: 1, bits: 4, writable: true, signed: false, },
 
-    "Time Update" => Field { reg: 0x1C, offset: 0, bits: 8, writable: true },
-    "LED Control" => Field { reg: 0x1D, offset: 0, bits: 3, writable: true },
-    "Reset" => Field { reg: 0x2F, offset: 0, bits: 3, writable: true },
+    "Time Update" => Field { reg: 0x1C, offset: 0, bits: 8, writable: true, signed: false, },
+    "LED Control" => Field { reg: 0x1D, offset: 0, bits: 3, writable: true, signed: false, },
+    "Reset" => Field { reg: 0x2F, offset: 0, bits: 3, writable: true, signed: false, },
 };
