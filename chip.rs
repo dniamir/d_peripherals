@@ -140,6 +140,53 @@ where
 
         Ok(field_val)
     }
+
+    // Function to write a single fiel that holds a 16 bit value using the field details
+    pub async fn write_field16(&self, field_reg: u8, field_offset: u8, field_bits: u8, field_val: u16) -> Result<(), ChipError> {
+
+        // Read the register
+        DLogger::hold();
+        let mut read_buff = [0u8; 2];
+        self.read_regs(field_reg, &mut read_buff).await?;
+        let reg_val = u16::from_be_bytes(read_buff);
+        DLogger::release();
+
+        // Clear the field
+        let mask = ((1u32 << field_bits) - 1) << field_offset;
+        let cleared = (reg_val as u32) & !mask;
+        let inserted = ((field_val as u32) << field_offset) & mask;
+        let field_val = (cleared | inserted) as u16;
+
+        // Get the write value
+        let write_buff: [u8; 2] = field_val.to_be_bytes();
+    
+        // Write the register
+        d_info!("Write Field: 0x{:X}, {:b}, 0x{:X}, {}", field_reg, field_val, field_val, field_val);
+        DLogger::hold();
+        self.write_regs(field_reg, &write_buff).await?;
+        DLogger::release();
+
+        Ok(())
+    }
+
+    // Function to read a 16 bit field using the field details
+    pub async fn read_field16(&self, field_reg: u8, field_offset: u8, field_bits: u8) -> Result<u16, ChipError> {
+        
+        // Read the field
+        DLogger::hold();
+        let mut read_buff = [0u8; 2];
+        self.read_regs(field_reg, &mut read_buff).await?;
+        let reg_val = u16::from_be_bytes(read_buff);
+        DLogger::release();
+
+        // Get field value from masking
+        let mask = (((1u32 << field_bits) - 1) << field_offset) as u16;
+        let field_val = (reg_val & mask) >> field_offset;
+
+        d_info!("Read Field: 0x{:X}, {:b}, 0x{:X}, {}", field_reg, field_val, field_val, field_val);
+
+        Ok(field_val)
+    }
 }
 
 // MUTEX implementations for I2C generic - Defined Map using chip_map
