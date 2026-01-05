@@ -72,7 +72,7 @@ where
         Ok(())
     }
 
-    // Basic function to write a single register
+    // Basic function to write a single 8 bit register
     pub async fn write_reg(&self, reg: u8, reg_val: u8) -> Result<(), ChipError> {
             
         // Log write
@@ -86,7 +86,7 @@ where
         Ok(())
     }
 
-    // Basic function to read a single register
+    // Basic function to read a 8 bit single register
     pub async fn read_reg(&self, reg: u8) -> Result<u8, ChipError> {
 
         let mut reg_vals = [0];
@@ -96,12 +96,42 @@ where
         self.read_regs(reg, &mut reg_vals).await?;
         DLogger::release();
 
-        let reg_value = reg_vals[0];
-        d_info!("Read Register: 0x{:X}, {:b}, 0x{:X}, {}", reg, reg_value, reg_value, reg_value);
-        Ok(reg_value)
+        let reg_val = reg_vals[0];
+        d_info!("Read Register: 0x{:X}, {:b}, 0x{:X}, {}", reg, reg_val, reg_val, reg_val);
+        Ok(reg_val)
     }
 
-    // Function to write a single field using the field details
+    // Basic function to write a single 8 bit register
+    pub async fn write_reg16(&self, reg: u8, reg_val: u16) -> Result<(), ChipError> {
+            
+        // Log write
+        d_info!("Write Register: 0x{:X}, {:b}, 0x{:X}, {}", reg, reg_val, reg_val, reg_val);
+
+        // Read reg
+        DLogger::hold();
+        let write_buff: [u8; 2] = reg_val.to_be_bytes();
+        self.write_regs(reg, &write_buff).await?;
+        DLogger::release();
+
+        Ok(())
+    }
+
+    // Basic function to read a 8 bit single register
+    pub async fn read_reg16(&self, reg: u8) -> Result<u16, ChipError> {
+    
+        // Read reg
+        DLogger::hold();
+        let mut read_buff = [0u8; 2];
+        self.read_regs(reg, &mut read_buff).await?;
+        let reg_val = u16::from_be_bytes(read_buff);
+        DLogger::release();
+
+        // Log value
+        d_info!("Read Register: 0x{:X}, {:b}, 0x{:X}, {}", reg, reg_val, reg_val, reg_val);
+        Ok(reg_val)
+    }
+
+    // Function to write a single 8 bit field using the field details
     pub async fn write_field(&self, field_reg: u8, field_offset: u8, field_bits: u8, field_val: u8) -> Result<(), ChipError> {
 
         // Read the register
@@ -124,7 +154,7 @@ where
         Ok(())
     }
 
-    // Function to read a single field using the field details
+    // Function to read a single 8 bit field using the field details
     pub async fn read_field(&self, field_reg: u8, field_offset: u8, field_bits: u8) -> Result<u8, ChipError> {
         
         // Read the field
@@ -146,9 +176,7 @@ where
 
         // Read the register
         DLogger::hold();
-        let mut read_buff = [0u8; 2];
-        self.read_regs(field_reg, &mut read_buff).await?;
-        let reg_val = u16::from_be_bytes(read_buff);
+        let reg_val = self.read_reg16(field_reg).await?;
         DLogger::release();
 
         // Clear the field
@@ -156,14 +184,11 @@ where
         let cleared = (reg_val as u32) & !mask;
         let inserted = ((field_val as u32) << field_offset) & mask;
         let field_val = (cleared | inserted) as u16;
-
-        // Get the write value
-        let write_buff: [u8; 2] = field_val.to_be_bytes();
     
         // Write the register
         d_info!("Write Field: 0x{:X}, {:b}, 0x{:X}, {}", field_reg, field_val, field_val, field_val);
         DLogger::hold();
-        self.write_regs(field_reg, &write_buff).await?;
+        self.write_reg16(field_reg, field_val).await?;
         DLogger::release();
 
         Ok(())
@@ -174,9 +199,7 @@ where
         
         // Read the field
         DLogger::hold();
-        let mut read_buff = [0u8; 2];
-        self.read_regs(field_reg, &mut read_buff).await?;
-        let reg_val = u16::from_be_bytes(read_buff);
+        let reg_val = self.read_reg16(field_reg).await?;
         DLogger::release();
 
         // Get field value from masking
@@ -196,7 +219,7 @@ where
     MAP: chip_map::FieldMapProvider,
 {
 
-    // Basic function to read multiple registers using a string name
+    // Basic function to read multiple 8 bit registers using a string name
     pub async fn read_regs_str(&self, reg_str: &str, reg_vals: &mut [u8]) -> Result<(), ChipError> {
         
         // Get field details
@@ -207,7 +230,7 @@ where
         Ok(())
     }
 
-    // Function to read a single register using a string name
+    // Function to read a single 8 bit egister using a string name
     pub async fn read_reg_str(&self, reg_str: &str) -> Result<u8, ChipError> {
         
         // Get field details
@@ -215,13 +238,13 @@ where
         
         // Just read the raw register value
         DLogger::hold();
-        let reg_value = self.read_reg(reg_dets.reg).await?;
+        let reg_val = self.read_reg(reg_dets.reg).await?;
         DLogger::release();
-        d_info!("Read Register: {}, {:b}, 0x{:X}, {}", reg_str, reg_value, reg_value, reg_value);
-        Ok(reg_value)
+        d_info!("Read Register: {}, {:b}, 0x{:X}, {}", reg_str, reg_val, reg_val, reg_val);
+        Ok(reg_val)
     }
 
-    // Function to write a single register using a string name
+    // Function to write a single 8 bit register using a string name
     pub async fn write_reg_str(&self, reg_str: &str, reg_val: u8) -> Result<(), ChipError> {
         
         // Get register details
@@ -235,7 +258,7 @@ where
         Ok(())
     }
 
-    // Function to read a single field using a string name
+    // Function to read a single 8 bit field using a string name
     pub async fn read_field_str(&self, field: &str) -> Result<u8, ChipError> {
 
         // Get field details
@@ -254,7 +277,7 @@ where
         Ok(field_val)
     }
 
-    // Function to write a single field using a string name
+    // Function to write a single 8 bit field using a string name
     pub async fn write_field_str(&self, field: &str, field_val: u8) -> Result<(), ChipError> {
        
         // Get field details
@@ -269,6 +292,89 @@ where
         self.write_field(field_reg, field_offset, field_bits, field_val).await?;
         DLogger::release();
 
+        Ok(())
+    }
+
+    // Function to read a single 16 bit field using a string name
+    pub async fn read_field_st16(&self, field: &str) -> Result<u16, ChipError> {
+
+        // Get field details
+        let field_dets = MAP::get_read_field(field).ok_or(ChipError::FieldNotFound)?;
+        let field_reg: u8 = field_dets.reg as u8;
+        let field_offset: u8 = field_dets.offset as u8;
+        let field_bits: u8 = field_dets.bits as u8;
+
+        // Read the field
+        DLogger::hold();
+        let field_val = self.read_field16(field_reg, field_offset, field_bits).await.unwrap();
+        DLogger::release();
+
+        d_info!("Read Field: {}, {:b}, 0x{:X}, {}", field, field_val, field_val, field_val);
+
+        Ok(field_val)
+    }
+
+    // Function to write a single 16 bit field using a string name
+    pub async fn write_field_str16(&self, field: &str, field_val: u16) -> Result<(), ChipError> {
+       
+        // Get field details
+        let field_dets = MAP::get_write_field(field).ok_or(ChipError::FieldNotFound)?;
+        let field_reg: u8 = field_dets.reg as u8;
+        let field_offset: u8 = field_dets.offset as u8;
+        let field_bits: u8 = field_dets.bits as u8;
+
+        // Write the field
+        d_info!("Write Field: {}, {:b}, 0x{:X}, {}", field, field_val, field_val, field_val);
+        DLogger::hold();
+        self.write_field16(field_reg, field_offset, field_bits, field_val).await?;
+        DLogger::release();
+
+        Ok(())
+    }
+
+    // Currently has issues because we need to define a u8 slice from a u16 slice, which is not easily possible.
+    // // Basic function to read multiple 16bit registers using a string name
+    // pub async fn read_regs_str16(&self, reg_str: &str, reg_vals: &mut [u16]) -> Result<(), ChipError> {
+        
+    //     // Get field details
+    //     let reg_dets = MAP::get_read_field(reg_str).ok_or(ChipError::FieldNotFound)?;
+        
+    //     // Read the registers
+    //     let mut read_buff = [0u8; 2 * reg_vals.len() as usize];
+    //     self.read_regs(reg, &mut read_buff).await?;
+
+    //     // Convert [u8] into [u16]
+    //     for (i, chunk) in read_buff.chunks_exact(2).enumerate() {
+    //         reg_vals[i] = u16::from_be_bytes(chunk.try_into().unwrap());
+    //     }
+    //     Ok(())
+    // }
+
+    // Function to read a single 16bit register using a string name
+    pub async fn read_reg_str16(&self, reg_str: &str) -> Result<u16, ChipError> {
+        
+        // Get field details
+        let reg_dets = MAP::get_read_field(reg_str).ok_or(ChipError::FieldNotFound)?;
+        
+        // Just read the raw register value
+        DLogger::hold();
+        let reg_val = self.read_reg16(reg_dets.reg).await?;
+        DLogger::release();
+        d_info!("Read Register: {}, {:b}, 0x{:X}, {}", reg_str, reg_val, reg_val, reg_val);
+        Ok(reg_val)
+    }
+
+    // Function to write a single 16bit register using a string name
+    pub async fn write_reg_str16(&self, reg_str: &str, reg_val: u16) -> Result<(), ChipError> {
+        
+        // Get register details
+        let reg_dets = MAP::get_write_field(reg_str).ok_or(ChipError::FieldNotFound)?;
+        
+        // Write the register
+        d_info!("Write Register: {}, {:b}, 0x{:X}, {}", reg_str, reg_val, reg_val, reg_val);
+        DLogger::hold();
+        self.write_reg16(reg_dets.reg, reg_val).await?;
+        DLogger::release();
         Ok(())
     }
 }
