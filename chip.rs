@@ -46,23 +46,43 @@ where
     COMM: CommProvider,
 {
 
+    // Basic function to write multiple registers
+    pub async fn write_regs(&self, reg: u8, reg_vals: &[u8]) -> Result<(), ChipError> {
+
+        // Log writes
+        reg_vals.iter().enumerate().for_each(|(i, &val)| {
+            d_info!("Write Registers: 0x{:X}, {:b}, 0x{:X}, {}", reg + i as u8, val, val, val);
+        });
+
+        // Perform write
+        self.comm.write(&[reg], reg_vals).await?;
+        Ok(())
+    }
+
     // Basic function to read multiple registers
     pub async fn read_regs(&self, reg: u8, reg_vals: &mut [u8]) -> Result<(), ChipError> {
         
+        // Perform read
         self.comm.write_read(&[reg], reg_vals).await?;
 
-        let mut reg_idx = 0;
-        for reg_value in reg_vals.iter() {
-            d_info!("Read Register: 0x{=u8:X}, {=u8:b}, 0x{=u8:X}, {}", reg + reg_idx, reg_value, reg_value, reg_value);
-            reg_idx += 1;
-        }
+        // Log reads
+        reg_vals.iter().enumerate().for_each(|(i, &val)| {
+            d_info!("Read Registers: 0x{:X}, {:b}, 0x{:X}, {}", reg + i as u8, val, val, val);
+        });
         Ok(())
     }
 
     // Basic function to write a single register
     pub async fn write_reg(&self, reg: u8, reg_val: u8) -> Result<(), ChipError> {
+            
+        // Log write
         d_info!("Write Register: 0x{=u8:X}, {=u8:b}, 0x{=u8:X}, {}", reg, reg_val, reg_val, reg_val);
+
+        // Read reg
+        DLogger::hold();
         self.comm.write(&[reg], &[reg_val]).await?;
+        DLogger::release();
+
         Ok(())
     }
 
