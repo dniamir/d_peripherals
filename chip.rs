@@ -20,8 +20,8 @@ impl From<CommError> for ChipError {
 // Generic I2C trait definitions
 #[allow(async_fn_in_trait)]  // Have to surpress warning, or else have to explicitely define output as a future, which is cumbersome
 pub trait CommProvider {
-    async fn write_read(&self, reg: u8, reg_vals: &mut [u8]) -> Result<(), CommError>;  
-    async fn write(&self, reg: u8, reg_val: u8) -> Result<(), CommError>;
+    async fn write_read(&self, regs: &[u8], reg_vals: &mut [u8]) -> Result<(), CommError>;  
+    async fn write(&self, regs: &[u8], reg_vals: &[u8]) -> Result<(), CommError>;
 }
 
 // Struct definition
@@ -49,7 +49,7 @@ where
     // Basic function to read multiple registers
     pub async fn read_regs(&self, reg: u8, reg_vals: &mut [u8]) -> Result<(), ChipError> {
         
-        self.comm.write_read(reg, reg_vals).await?;
+        self.comm.write_read(&[reg], reg_vals).await?;
 
         let mut reg_idx = 0;
         for reg_value in reg_vals.iter() {
@@ -62,7 +62,7 @@ where
     // Basic function to write a single register
     pub async fn write_reg(&self, reg: u8, reg_val: u8) -> Result<(), ChipError> {
         d_info!("Write Register: 0x{=u8:X}, {=u8:b}, 0x{=u8:X}, {}", reg, reg_val, reg_val, reg_val);
-        self.comm.write(reg, reg_val).await?;
+        self.comm.write(&[reg], &[reg_val]).await?;
         Ok(())
     }
 

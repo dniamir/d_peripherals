@@ -19,6 +19,7 @@ pub enum CommError {
     NotFound,
     TwimError(TwimError),
     HangUp,
+    OutOfBounds,
 }
 
 impl From<TwimError> for CommError {
@@ -72,15 +73,14 @@ where
 
 /// Implementation of CommProvider for I2C mutex on nRF52840
 impl CommProvider for NRFI2CMutex {
-    async fn write_read(&self, reg: u8, reg_vals: &mut [u8]) -> Result<(), CommError> {
+    async fn write_read(&self, regs: &[u8], reg_vals: &mut [u8]) -> Result<(), CommError> {
 
         // Get TWIM from MUTEX
         let mut twim = self.mutex.lock().await;
 
         // Define communication without calling it
-        let reg_buf: [u8; 1] = [reg];
         let i2c_address = self.i2c_address.unwrap();
-        let com = twim.write_read(i2c_address, &reg_buf, reg_vals);
+        let com = twim.write_read(i2c_address, regs, reg_vals);
 
         // Call communication with a timeout
         add_timeout(
@@ -90,15 +90,20 @@ impl CommProvider for NRFI2CMutex {
         ).await
     }
 
-    async fn write(&self, reg: u8, reg_val: u8) -> Result<(), CommError> {
+    async fn write(&self, regs: &[u8], reg_val: &[u8]) -> Result<(), CommError> {
         
         // Get TWIM from MUTEX
         let mut twim = self.mutex.lock().await;
 
+
+        // Add both reg and reg_val together
+        let mut reg_buff = [0u8; 32];
+        reg_buff[..regs.len()].copy_from_slice(regs);
+        reg_buff[regs.len()..regs.len() + reg_val.len()].copy_from_slice(reg_val);
+        
         // Define communication without calling it
-        let reg_buf: [u8; 2] = [reg, reg_val];
         let i2c_address = self.i2c_address.unwrap();
-        let com = twim.write(i2c_address, &reg_buf);
+        let com = twim.write(i2c_address, &reg_buff);
         
         // Call communication with a timeout
         add_timeout(
@@ -169,7 +174,7 @@ where
 
     /// Explicitly sync a specific register
     pub async fn true_raw_write(&self, reg: u8, reg_val: u8) -> Result<(), CommError> {
-        self.provider.write(reg, reg_val).await
+        self.provider.write(&[reg], &[reg_val]).await
     }
 
     /// Write all the shadow register values to the device
@@ -197,24 +202,39 @@ where
 impl<COMM> CommProvider for ShadowComm<COMM> {
 
     // Write and read to and from the shadow register field map
-    async fn write_read(&self, reg: u8, reg_vals: &mut [u8]) -> Result<(), CommError> {
+    async fn write_read(&self, regs: &[u8], reg_vals: &mut [u8]) -> Result<(), CommError> {
+        
+        // Borrow the shadow and dirty bits
         let shadow = self.shadow_registers.borrow();
-        let start = reg as usize;
-        let end = start + reg_vals.len();
-        reg_vals.copy_from_slice(&shadow[start..end]);
+
+        // Pair each register address with each slot in reg_vals
+        for (&reg_addr, output_slot) in regs.iter().zip(reg_vals.iter_mut()) {
+            let idx = reg_addr as usize;
+            
+            // Safety check to prevent out-of-bounds panics
+            if idx < shadow.len() {
+                *output_slot = shadow[idx];
+            } else {
+                return Err(CommError::OutOfBounds);
+            }
+        }
+
         Ok(())
     }
 
     // Write to shadow register field map
-    async fn write(&self, reg: u8, reg_val: u8) -> Result<(), CommError> {
+    async fn write(&self, regs: &[u8], reg_vals: &[u8]) -> Result<(), CommError> {
 
-        let reg_idx = reg as usize;
+        // Borrow the shadow and dirty bits
+        let mut shadow = self.shadow_registers.borrow_mut();
+        let mut dirty = self.dirty_bits.borrow_mut();
 
-        // Update shadow register value
-        self.shadow_registers.borrow_mut()[reg_idx] = reg_val;
-
-        // Mark as dirty (1 = Dirty, 0 = Clean)
-        self.dirty_bits.borrow_mut()[reg_idx] = 1;
+        // Iterate through the registers and update the shadow
+        for (&reg, &reg_val) in regs.iter().zip(reg_vals.iter()) {
+            let reg_idx = reg as usize;
+            shadow[reg_idx] = reg_val;
+            dirty[reg_idx] = reg_val;
+        }
 
         Ok(())
     }
