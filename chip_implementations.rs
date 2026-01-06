@@ -95,15 +95,15 @@ impl CommProvider for NRFI2CMutex {
         // Get TWIM from MUTEX
         let mut twim = self.mutex.lock().await;
 
-
         // Add both reg and reg_val together
+        let total_len = regs.len() + reg_val.len(); // Calculate the combined length
         let mut reg_buff = [0u8; 32];
         reg_buff[..regs.len()].copy_from_slice(regs);
-        reg_buff[regs.len()..regs.len() + reg_val.len()].copy_from_slice(reg_val);
+        reg_buff[regs.len()..total_len].copy_from_slice(reg_val);
         
         // Define communication without calling it
         let i2c_address = self.i2c_address.unwrap();
-        let com = twim.write(i2c_address, &reg_buff);
+        let com = twim.write(i2c_address, &reg_buff[..total_len]);
         
         // Call communication with a timeout
         add_timeout(
