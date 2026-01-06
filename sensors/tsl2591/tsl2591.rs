@@ -69,7 +69,7 @@ where
         self.reset().await?;
         // Timer::after_millis(200).await;  // WHOAMI will not read if there's a delay - but this is already built in
 
-        let id = self.chip.read_field_str("ID").await?; // Assuming 0x12 is ID register address
+        let id = self.chip.read_field_str("ID").await?; // ID is 0x12 (0xB2 with command bit) and should return 0x50
 
         DLogger::release();
 
