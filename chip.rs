@@ -109,7 +109,7 @@ where
 
         // Read reg
         DLogger::hold();
-        let write_buff: [u8; 2] = reg_val.to_be_bytes();
+        let write_buff: [u8; 2] = reg_val.to_le_bytes();
         self.write_regs(reg, &write_buff).await?;
         DLogger::release();
 
@@ -123,7 +123,7 @@ where
         DLogger::hold();
         let mut read_buff = [0u8; 2];
         self.read_regs(reg, &mut read_buff).await?;
-        let reg_val = u16::from_be_bytes(read_buff);
+        let reg_val = u16::from_le_bytes(read_buff);
         DLogger::release();
 
         // Log value
@@ -296,7 +296,7 @@ where
     }
 
     // Function to read a single 16 bit field using a string name
-    pub async fn read_field_st16(&self, field: &str) -> Result<u16, ChipError> {
+    pub async fn read_field_str16(&self, field: &str) -> Result<u16, ChipError> {
 
         // Get field details
         let field_dets = MAP::get_read_field(field).ok_or(ChipError::FieldNotFound)?;
