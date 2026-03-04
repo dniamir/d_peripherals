@@ -207,6 +207,30 @@ where
         Ok(press_comp)
     }
 
+    // Read the sensor humidity output
+    pub async fn read_humidity(&mut self) -> Result<i32, BME680Error> {
+
+        // Lock logger while this is being run
+        DLogger::hold();
+        self.chip.write_field_str("mode", 0b01).await?;
+
+        // Read Pressure
+        let mut humid_out = [0u8; 2];
+        self.chip.read_regs_str("hum_msb", &mut humid_out).await?;
+        DLogger::release();
+
+        // Bit Shift and Calibrate Value
+        let humid_adc: u16 = 
+            ((humid_out[0] as u16) << 8) | 
+            ((humid_out[1] as u16));
+        let humid_comp = self.calibrate_humidity(humid_adc);
+
+        // Log pressure
+        d_info!("Humidity: {}%", humid_comp / 1000);
+        
+        Ok(humid_comp)
+    }
+
     // Calibrate the raw temperature output
     pub fn calibrate_temperature(&mut self, temp_adc: u32) -> i32 {
 
@@ -287,6 +311,32 @@ where
 
         press_comp as u32
     }
+
+    // Calibrate the raw humidity output
+    pub fn calibrate_humidity(&mut self, humid_adc: u16) -> i32 {
+        let par_h1 = self.cal_codes.par_h1 as i32;
+        let par_h2 = self.cal_codes.par_h2 as i32;
+        let par_h3 = self.cal_codes.par_h3 as i32;
+        let par_h4 = self.cal_codes.par_h4 as i32;
+        let par_h5 = self.cal_codes.par_h5 as i32;
+        let par_h6 = self.cal_codes.par_h6 as i32;
+        let par_h7 = self.cal_codes.par_h7 as i32;
+
+        let temp_scaled = self.temp_comp;
+
+        let var1 = humid_adc as i32 - (par_h1 << 4)
+            - ((temp_scaled * par_h3 / 100) >> 1);
+        let var2 = par_h2 * ((temp_scaled * par_h4 / 100)
+            + (((temp_scaled * (temp_scaled * par_h5 / 100)) >> 6) / 100)
+            + (1 << 14)) >> 10;
+        let var3 = var1 * var2;
+        let var4 = ((par_h6 << 7) + (temp_scaled * par_h7 / 100)) >> 4;
+        let var5 = ((var3 >> 14) * (var3 >> 14)) >> 10;
+        let var6 = (var4 * var5) >> 1;
+
+        (((var3 + var6) >> 10) * 1000) >> 12
+    }
+
 }
 
 #[derive(Copy, Clone)]
