@@ -1,5 +1,6 @@
 use heapless::String;
 use core::fmt::Write;
+use embassy_time::Timer;
 
 use phf::Map;  // Efficient map for register maps
 use phf_macros::phf_map;
@@ -34,6 +35,17 @@ impl <COMM> BME680<COMM> {
     pub const DEFAULT_I2C_ADDRESS: u8 = 0x76;
     pub const WHO_AM_I_REG: u8 = 0xD0;
     pub const WHO_AM_I_VAL: u8 = 0x61;
+
+    // Gas constants
+    pub const CONST_ARRAY1_INT: [u32; 16] = [2147483647, 2147483647, 2147483647, 2147483647,
+	                2147483647, 2126008810, 2147483647, 2130303777, 2147483647,
+	                2147483647, 2143188679, 2136746228, 2147483647, 2126008810,
+	                2147483647, 2147483647];
+	
+    pub const CONST_ARRAY2_INT: [u32; 16] = [4096000000, 2048000000, 1024000000, 512000000,
+                      255744255, 127110228, 64000000, 32258064,
+                      16016016, 8000000, 4000000, 2000000,
+                      1000000, 500000, 250000, 125000];
 }
 
 // When Chip is defined using the BME680 FieldMap
@@ -161,6 +173,7 @@ where
         DLogger::hold();
 
         self.chip.write_field_str("mode", 0b01).await?;
+        Timer::after_millis(250).await;
 
         let mut temp_out = [0u8; 3];
         self.chip.read_regs_str("temp_msb", &mut temp_out).await?;
@@ -188,6 +201,7 @@ where
         // Lock logger while this is being run
         DLogger::hold();
         self.chip.write_field_str("mode", 0b01).await?;
+        Timer::after_millis(250).await;
 
         // Read Pressure
         let mut press_out = [0u8; 3];
@@ -213,6 +227,7 @@ where
         // Lock logger while this is being run
         DLogger::hold();
         self.chip.write_field_str("mode", 0b01).await?;
+        Timer::after_millis(250).await;
 
         // Read Pressure
         let mut humid_out = [0u8; 2];
@@ -229,6 +244,63 @@ where
         d_info!("Humidity: {}%", humid_comp / 1000);
         
         Ok(humid_comp)
+    }
+
+    pub async fn read_low_gas(&mut self) -> Result<u32, BME680Error>  {
+
+        // Force Measurement
+        DLogger::hold();
+        self.chip.write_field_str("mode", 0x01).await?;
+        Timer::after_millis(250).await;
+
+        // Read gas output
+        let mut gas_out = [0u8; 2];
+        self.chip.read_regs_str("gas_r_msb", &mut gas_out).await?;
+        let gas_res_adc = ((gas_out[0] as u16 )<< 2) | ((gas_out[1] as u16) >> 6);
+
+        // Intermediates
+        let range_switching_error = self.chip.read_field_str("range_switching_error").await? as i8;
+        let gas_range = self.chip.read_field_str("gas_range_r").await?;
+        let range = gas_range.min(15) as usize;  // Ensure within lookup table bounds
+        DLogger::release();
+
+        // Calculations
+        let var1 = ((1340 + (5 * range_switching_error as i64)) * (Self::CONST_ARRAY1_INT[range] as i64)) >> 16;
+        let var2 = (((gas_res_adc as i64) << 15) - 16777216) + var1;
+        let var3 = ((Self::CONST_ARRAY2_INT[range] as i64) * var1) >> 9;
+
+        let gas_low =((var3 + (var2 >> 1)) / var2) as u32;
+
+        Ok(gas_low)
+    }
+
+    pub async fn read_high_gas(&mut self) -> Result<u32, BME680Error> {
+
+        // Force Measurement
+        DLogger::hold();
+        self.chip.write_field_str("mode", 0x01).await?;
+        Timer::after_millis(250).await;
+
+        // Read gas output
+        let mut gas_out = [0u8; 2];
+        self.chip.read_regs_str("gas_r_msb", &mut gas_out).await?;
+        let gas_res_adc = ((gas_out[0] as u16 )<< 2) | ((gas_out[1] as u16) >> 6);
+
+        // Intermediates
+        let gas_range = self.chip.read_field_str("gas_range_r").await?;
+        DLogger::release();
+
+        // Gas range is used as a bit-shift factor [cite: 633, 638]
+        let var1: u32 = 262144 >> gas_range;
+        let mut var2: i32 = (gas_res_adc as i32) - 512;
+
+        var2 *= 3;
+        var2 = 4096 + var2;
+
+        // Use the 10000 * 100 scaling strategy to prevent 32-bit overflow [cite: 641, 645]
+        let gass_high = (10000 * var1) / (var2 as u32) * 100;
+        
+        Ok(gass_high)
     }
 
     // Calibrate the raw temperature output
