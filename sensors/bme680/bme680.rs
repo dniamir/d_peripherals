@@ -271,6 +271,9 @@ where
 
         let gas_low =((var3 + (var2 >> 1)) / var2) as u32;
 
+        // Log gas
+        d_info!("Gas Low: {}", gas_low);
+
         Ok(gas_low)
     }
 
@@ -299,6 +302,9 @@ where
 
         // Use the 10000 * 100 scaling strategy to prevent 32-bit overflow [cite: 641, 645]
         let gass_high = (10000 * var1) / (var2 as u32) * 100;
+
+        // Log gas
+        d_info!("Gas High: {}", gass_high);
         
         Ok(gass_high)
     }
