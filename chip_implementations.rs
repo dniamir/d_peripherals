@@ -35,7 +35,7 @@ impl embedded_hal::i2c::Error for CommError {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct NRFI2CMutex {
     pub mutex: &'static Mutex<ThreadModeRawMutex, Twim<'static>>,
     pub i2c_address: Option<u8>,
@@ -63,23 +63,26 @@ where
         op,
     ).await;
 
-    let _result = match timeout_func {
+    // Capture the result so we can return it after releasing the logger
+    let result = match timeout_func {
         Ok(comm_result) => {
             if comm_result.is_err() { 
                 d_force!("----Comm Error----");
-            } 
-            else { 
+            } else { 
                 d_info!("Comm Success");
             }
+            comm_result // Propagate the actual I2C/Comm error
         }
         Err(_) => {
             d_force!("----Comm timeout----");
+            // Hardware recovery: wait for the IS3 chip or I2C bus to stabilize
             Timer::after_millis(recovery_delay_ms).await;
+            Err(CommError::HangUp) // Return a specific timeout error
         }
     };
 
     DLogger::release();
-    Ok(())
+    result 
 }
 
 

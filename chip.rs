@@ -269,7 +269,7 @@ where
 
         // Read the field
         DLogger::hold();
-        let field_val = self.read_field(field_reg, field_offset, field_bits).await.unwrap();
+        let field_val = self.read_field(field_reg, field_offset, field_bits).await?;
         DLogger::release();
 
         d_info!("Read Field: {}, {:b}, 0x{:X}, {}", field, field_val, field_val, field_val);
@@ -306,7 +306,7 @@ where
 
         // Read the field
         DLogger::hold();
-        let field_val = self.read_field16(field_reg, field_offset, field_bits).await.unwrap();
+        let field_val = self.read_field16(field_reg, field_offset, field_bits).await?;
         DLogger::release();
 
         d_info!("Read Field: {}, {:b}, 0x{:X}, {}", field, field_val, field_val, field_val);
