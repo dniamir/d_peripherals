@@ -145,7 +145,6 @@ where
     // Gives 3 outputs, one for each type of output
     // Full spectrum, IR spectrum, and visibible spectrum
     pub async fn read_full_luminosity(&mut self) -> Result<(u16, u16, u16), TSL2591Error> {
-        d_info!("Reading full luminosity from TSL2591");
         DLogger::hold();
         let mut disable_after = false;
 
@@ -169,7 +168,9 @@ where
 
         DLogger::release();
 
-        d_info!("Light FS: {}, Light IR: {}, Light VS: {}", light_fs, light_ir, light_vs);
+        d_info!("Light FS: {}", light_fs);
+        d_info!("Light IR: {}", light_ir);
+        d_info!("Light VS: {}", light_vs);
 
         Ok((light_fs, light_ir, light_vs))
 
