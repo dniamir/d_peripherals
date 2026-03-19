@@ -1,4 +1,5 @@
 use core::cell::RefCell;
+use embedded_hal_async::i2c::{I2c, ErrorType, Operation};
 use embassy_sync::mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_time::{Timer, Duration, with_timeout};
@@ -28,6 +29,12 @@ impl From<TwimError> for CommError {
     }
 }
 
+impl embedded_hal::i2c::Error for CommError {
+    fn kind(&self) -> embedded_hal::i2c::ErrorKind {
+        embedded_hal::i2c::ErrorKind::Other
+    }
+}
+
 #[derive(Clone)]
 pub struct NRFI2CMutex {
     pub mutex: &'static Mutex<ThreadModeRawMutex, Twim<'static>>,
@@ -37,6 +44,11 @@ impl Addressable for NRFI2CMutex {
     fn set_address(&mut self, address: u8) {
         self.i2c_address = Some(address);
     }
+}
+
+// Map the error type so the driver knows how to handle failures
+impl ErrorType for NRFI2CMutex {
+    type Error = CommError; 
 }
 
 // Async function to add a delay to a command
@@ -111,6 +123,46 @@ impl CommProvider for NRFI2CMutex {
             200, 
             200,
         ).await                      
+    }
+}
+
+// Implementation of embedded_hal_async I2C for NRFI2CMutex
+impl I2c for NRFI2CMutex {
+    async fn read(&mut self, address: u8, read: &mut [u8]) -> Result<(), Self::Error> {
+        // Bridge to your existing mutex logic
+        let mut twim = self.mutex.lock().await;
+        add_timeout(async { Ok(twim.read(address, read).await?) }, 200, 200).await
+    }
+
+    async fn write(&mut self, address: u8, write: &[u8]) -> Result<(), Self::Error> {
+        // You can call your existing CommProvider::write here 
+        // OR just reimplement the mutex lock logic to match the address argument
+        let mut twim = self.mutex.lock().await;
+        add_timeout(async { Ok(twim.write(address, write).await?) }, 200, 200).await
+    }
+
+    async fn write_read(&mut self, address: u8, write: &[u8], read: &mut [u8]) -> Result<(), Self::Error> {
+        let mut twim = self.mutex.lock().await;
+        add_timeout(async { Ok(twim.write_read(address, write, read).await?) }, 200, 200).await
+    }
+
+    async fn transaction(
+        &mut self,
+        address: u8,
+        operations: &mut [Operation<'_>],
+    ) -> Result<(), Self::Error> {
+        let mut twim = self.mutex.lock().await;
+
+        // Wrap the entire transaction in your timeout logic
+        add_timeout(async {
+            for op in operations {
+                match op {
+                    Operation::Read(buf) => twim.read(address, buf).await?,
+                    Operation::Write(buf) => twim.write(address, buf).await?,
+                }
+            }
+            Ok(())
+        }, 200, 200).await
     }
 }
 
