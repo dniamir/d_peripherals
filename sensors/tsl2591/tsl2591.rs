@@ -6,7 +6,7 @@ use embassy_time::Timer;
 use crate::d_peripherals::chip::{Chip, CommProvider, ChipError};
 use crate::d_peripherals::chip_implementations::Addressable;
 use crate::d_peripherals::chip_map::{Field, FieldMapProvider};
-use crate::{d_log::dlogger::DLogger, d_info};  // Logging
+use crate::{d_log::dlogger_common::DLogger, d_info};  // Logging
 
 #[derive(Debug)]
 pub enum TSL2591Error {

@@ -7,7 +7,7 @@ use embassy_nrf::twim::{Twim, Error as TwimError};
 use core::future::Future;
 
 use crate::d_peripherals::chip::CommProvider;
-use crate::{d_log::dlogger::DLogger, d_info, d_force};  // Logging
+use crate::{d_log::dlogger_common::DLogger, d_info, d_force};  // Logging
 
 
 // Trait defined for embassy nRF52840 I2C mutex

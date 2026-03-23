@@ -82,7 +82,7 @@ where
     pub async fn read_level_percent(&mut self) -> Result<f32, MAX17260Error> {
         let batt_lsb = self.chip.read_field_str16("RepSOC").await? as f32;
         let batt_per = batt_lsb * Self::PER_PER_LSB;
-        d_info!(f: "Battery Percent: {}", batt_per, 2);
+        d_info!("Battery Percent: {}", batt_per, 2);
         Ok(batt_per) 
     }
 

@@ -6,7 +6,7 @@ use crate::d_peripherals::chip::{Chip, CommProvider, ChipError};
 use crate::d_peripherals::chip_implementations::{Addressable, ShadowComm, CommError};
 use crate::d_peripherals::chip_map::{Field, FieldMapProvider};
 
-use crate::{d_log::dlogger::DLogger, d_info};  // Logging
+use crate::{d_log::dlogger_common::DLogger, d_info};  // Logging
 
 #[derive(Copy, Clone, Debug)]
 pub enum LedColor { RED, GREEN, BLUE, YELLOW, PURPLE, TEAL, ALL, WHITE }

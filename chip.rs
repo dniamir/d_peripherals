@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 
 use crate::d_peripherals::chip_implementations::{Addressable, CommError};
 use crate::d_peripherals::chip_map;
-use crate::{d_log::dlogger::DLogger, d_info};  // Logging
+use crate::{d_log::dlogger_common::DLogger, d_info};  // Logging
 
 
 /// Define some error types

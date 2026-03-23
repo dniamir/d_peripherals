@@ -8,7 +8,7 @@ use phf_macros::phf_map;
 use crate::d_peripherals::chip::{Chip, CommProvider, ChipError};
 use crate::d_peripherals::chip_implementations::Addressable;
 use crate::d_peripherals::chip_map::{Field, FieldMapProvider};
-use crate::{d_log::dlogger::DLogger, d_info};  // Logging
+use crate::{d_log::dlogger_common::DLogger, d_info};  // Logging
 
 
 #[derive(Debug)]
@@ -186,7 +186,7 @@ where
     }
 
     // Read the sensor temperature output
-    pub async fn read_temperature(&mut self) -> Result<i32, BME680Error> {
+    pub async fn read_temperature(&mut self) -> Result<f32, BME680Error> {
         DLogger::hold();
 
         self.chip.write_field_str("mode", 0b01).await?;
@@ -204,12 +204,10 @@ where
         let temp_comp = self.calibrate_temperature(temp_adc);
         DLogger::release();
 
-        // Log statement with decimal points
-        let whole = temp_comp / 100;
-        let frac  = temp_comp % 100;
-        d_info!("Temperature: {}.{:02} °C", whole, frac);
+        let temp_f32 = temp_comp as f32 / 100.0;
+        d_info!("Temperature: {} °C", temp_f32, 1);
 
-        Ok(temp_comp)
+        Ok(temp_f32)
     }
 
     // Read the sensor pressure output
@@ -239,28 +237,27 @@ where
     }
 
     // Read the sensor humidity output
-    pub async fn read_humidity(&mut self) -> Result<i32, BME680Error> {
+    pub async fn read_humidity(&mut self) -> Result<f32, BME680Error> {
 
         // Lock logger while this is being run
         DLogger::hold();
         self.chip.write_field_str("mode", 0b01).await?;
         Timer::after_millis(250).await;
 
-        // Read Pressure
+        // Read Humidity
         let mut humid_out = [0u8; 2];
         self.chip.read_regs_str("hum_msb", &mut humid_out).await?;
         DLogger::release();
 
-        // Bit Shift and Calibrate Value
-        let humid_adc: u16 = 
-            ((humid_out[0] as u16) << 8) | 
+        // Bit Shift, Calibrate, and Convert
+        let humid_adc: u16 =
+            ((humid_out[0] as u16) << 8) |
             ((humid_out[1] as u16));
-        let humid_comp = self.calibrate_humidity(humid_adc);
+        let humid_f32 = self.calibrate_humidity(humid_adc) as f32 / 1000.0;
 
-        // Log pressure
-        d_info!("Humidity: {}%", humid_comp / 1000);
-        
-        Ok(humid_comp)
+        d_info!("Humidity: {}%", humid_f32, 1);
+
+        Ok(humid_f32)
     }
 
     pub async fn read_low_gas(&mut self) -> Result<u32, BME680Error>  {
