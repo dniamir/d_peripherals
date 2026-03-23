@@ -80,6 +80,23 @@ impl <COMM> BME680<COMM>
 where
     COMM: CommProvider
 {
+    // Reset the sensor
+    pub async fn reset(&mut self) -> Result<(), BME680Error> {
+
+        d_info!("Resetting BME680");
+
+        DLogger::hold();
+        let hold_count = DLogger::get_hold_count();
+
+        // Ignore a returned error, since ACK will likely not be returned
+        let _ = self.chip.write_reg(0xe0, 0xB6).await;
+
+        // Return hold count
+        DLogger::set_hold(hold_count);
+
+        Ok(())
+    }
+
     // Set a wait profile for the gas sensor
     pub async fn set_gas_wait(&mut self, wait_time_ms: u8, profile_num: u8) -> Result<(), BME680Error> {
         let mut buf: String<16> = String::new();

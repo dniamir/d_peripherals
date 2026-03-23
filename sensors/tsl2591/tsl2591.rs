@@ -67,11 +67,12 @@ where
         DLogger::hold();
 
         self.reset().await?;
-        // Timer::after_millis(200).await;  // WHOAMI will not read if there's a delay - but this is already built in
 
         let id = self.chip.read_field_str("ID").await?; // ID is 0x12 (0xB2 with command bit) and should return 0x50
-
+        
         DLogger::release();
+        d_info!("WHOAMI {}", id);
+        d_info!("WHOAMIVAL {}", Self::WHO_AM_I_VAL);
 
         if id == Self::WHO_AM_I_VAL {
             d_info!("TSL connection successful");
@@ -86,8 +87,15 @@ where
     pub async fn reset(&self) -> Result<(), TSL2591Error> {
         d_info!("Resetting TSL2591");
         DLogger::hold();
-        self.chip.write_field_str("SRESET", 1).await?;
-        DLogger::release();
+        let hold_count = DLogger::get_hold_count();
+
+        // Ignore a returned error, since ACK will likely not be returned
+        let _ = self.chip.write_field_str("SRESET", 1).await;
+
+        // Return hold count
+        DLogger::set_hold(hold_count);
+        
+        
         Ok(())
     }
 

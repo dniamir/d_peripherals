@@ -80,9 +80,15 @@ where
     pub async fn soft_reset(&mut self) -> Result<(), IS31FL3193Error>  {
         d_info!("Performing Soft Reset");
         DLogger::hold();
-        self.chip.comm.true_raw_write(0x2F, 0).await?;
+        let hold_count = DLogger::get_hold_count();
+
+        // Ignore a returned error, since ACK will likely not be returned
+        let _ = self.chip.comm.true_raw_write(0x2F, 0).await;
         self.chip.comm.reset_shadow();
-        DLogger::release();
+        
+        // Return hold count
+        DLogger::set_hold(hold_count);
+        
         Ok(())
     }
 
