@@ -5,6 +5,7 @@ use phf_macros::phf_map;
 use crate::d_peripherals::chip::{Chip, CommProvider, ChipError};
 use crate::d_peripherals::chip_implementations::{Addressable, ShadowComm, CommError};
 use crate::d_peripherals::chip_map::{Field, FieldMapProvider};
+use crate::embassy_hal::gpio::Output;
 
 use crate::{d_log::dlogger_common::DLogger, d_info};  // Logging
 
@@ -30,9 +31,10 @@ impl From<CommError> for IS31FL3193Error {
 
 type IS3Chip<COMM> = Chip<ShadowComm<COMM>, IS31FL3193FieldMap>;
 
-pub struct IS31FL3193<COMM> 
+pub struct IS31FL3193<COMM>
 {
     pub chip: IS3Chip<COMM>,
+    pub sdb_pin: Option<Output<'static>>,
     pub status: i8,
 }
 
@@ -61,6 +63,7 @@ where
 
         let mut this = Self {
             chip,
+            sdb_pin: None,
             status: -1,
         };
 
