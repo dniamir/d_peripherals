@@ -4,7 +4,7 @@ use phf_macros::phf_map;
 use crate::d_peripherals::chip::{Chip, CommProvider, ChipError};
 use crate::d_peripherals::chip_implementations::Addressable;
 use crate::d_peripherals::chip_map::{Field, FieldMapProvider};
-use crate::d_info;  // Logging
+use crate::{d_log::dlogger_common::DLogger, d_info};
 
 #[derive(Debug)]
 pub enum MAX17260Error {
@@ -72,15 +72,24 @@ where
     COMM: CommProvider,
 {
     // Read battery voltage
-    pub async fn read_batt_voltage(&mut self) -> Result<f32, MAX17260Error> {
+    pub async fn read_level_voltage(&mut self) -> Result<f32, MAX17260Error> {
+        
+        DLogger::hold();
         let vcell_lsb = self.chip.read_field_str16("VCell").await? as f32;
+        DLogger::release();
+        
         let vcell_v = vcell_lsb * Self::V_PER_LSB;
+        d_info!("Battery Voltage: {}V", vcell_v, 2);
         Ok(vcell_v) 
     }
 
     // Read battery level percentage
     pub async fn read_level_percent(&mut self) -> Result<f32, MAX17260Error> {
+        
+        DLogger::hold();
         let batt_lsb = self.chip.read_field_str16("RepSOC").await? as f32;
+        DLogger::release();
+        
         let batt_per = batt_lsb * Self::PER_PER_LSB;
         d_info!("Battery Percent: {}%", batt_per, 2);
         Ok(batt_per) 
@@ -88,29 +97,47 @@ where
 
     // Read battery level in mAh
     pub async fn read_level_mahrs(&mut self) -> Result<f32, MAX17260Error> {
+        
+        DLogger::hold();
         let batt_lsb = self.chip.read_field_str16("RepCap").await? as f32;
+        DLogger::release();
+        
         let batt_mah = batt_lsb * Self::MAH_PER_LSB;
+        d_info!("Battery Charge: {}mAh", batt_mah, 1);
         Ok(batt_mah) 
     }
 
     // Read time to empty in seconds
     pub async fn read_tte(&mut self) -> Result<f32, MAX17260Error> {
+        
+        DLogger::hold();
         let tte_lsb = self.chip.read_field_str16("TTE").await? as f32;
+        DLogger::release();
+        
         let tte_s = tte_lsb * Self::SEC_PER_LSB;
         Ok(tte_s) 
     }
 
     // Read time to full in seconds
     pub async fn read_ttf(&mut self) -> Result<f32, MAX17260Error> {
+        
+        DLogger::hold();
         let ttf_lsb = self.chip.read_field_str16("TTF").await? as f32;
+        DLogger::release();
+        
         let ttf_s = ttf_lsb * Self::SEC_PER_LSB;
         Ok(ttf_s) 
     }
 
     // Read current in uA
     pub async fn read_current(&mut self, avg: bool) -> Result<f32, MAX17260Error> {
+        
         let field = if avg { "AvgCurrent" } else { "Current" };
+        
+        DLogger::hold();
         let current_lsb = self.chip.read_field_str16(field).await? as f32;
+        DLogger::release();
+        
         let current_ua = current_lsb * Self::UA_PER_LSB;
         Ok(current_ua)
     }
@@ -118,7 +145,11 @@ where
     // Read temperature in degC
     pub async fn read_temperature(&mut self, avg: bool) -> Result<f32, MAX17260Error> {
         let field = if avg { "AvgDieTemp" } else { "DieTemp" };
+        
+        DLogger::hold();
         let temp_lsb = self.chip.read_field_str16(field).await? as f32;
+        DLogger::release();
+        
         let temp_degc = temp_lsb * Self::DEGC_PER_LSB;
         Ok(temp_degc)
     }
