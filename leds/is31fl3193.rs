@@ -35,7 +35,6 @@ pub struct IS31FL3193<COMM>
 {
     pub chip: IS3Chip<COMM>,
     pub sdb_pin: Option<Output<'static>>,
-    pub status: i8,
 }
 
 impl <COMM> IS31FL3193<COMM> {
@@ -64,7 +63,6 @@ where
         let mut this = Self {
             chip,
             sdb_pin: None,
-            status: -1,
         };
 
         // Perform soft reset and reset shadow register map
