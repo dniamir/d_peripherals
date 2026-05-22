@@ -57,7 +57,10 @@ where
     // Constructor for when a Chip is not given
     pub async fn new_i2c<T: Into<Option<u8>>>(i2c: COMM, i2c_addr: T) -> Result<Self, BME680Error> {
 
+        d_info!("Initializing BME680");
+
         // Default i2c address
+        DLogger::hold();
         let i2c_addr = i2c_addr.into();
         let i2c_addr = i2c_addr.unwrap_or(Self::DEFAULT_I2C_ADDRESS);
 
@@ -71,6 +74,8 @@ where
         };
 
         this.read_cal_codes().await?;
+
+        DLogger::release();
 
         Ok(this)
     }
