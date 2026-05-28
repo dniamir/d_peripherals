@@ -43,6 +43,24 @@ impl <COMM> IS31FL3193<COMM> {
     pub const WHO_AM_I_VAL: u8 = 0x01;
 }
 
+impl <COMM> IS31FL3193<COMM> {
+
+    // Set the pin state - high will turn chip on, low will turn chip off
+    // If pin has not been set (can be set optionally) then return an error
+    pub fn set_sdb(&mut self, pin_state: bool) -> Result<(), IS31FL3193Error> {
+        if let Some(pin) = &mut self.sdb_pin {
+            if pin_state {
+                pin.set_high();
+            } else {
+                pin.set_low();
+            }
+            Ok(())
+        } else {
+            Err(IS31FL3193Error::NotFound)
+        }
+    }
+}
+
 impl <COMM> IS31FL3193<COMM>
 where
     COMM: CommProvider + Addressable,
