@@ -67,12 +67,12 @@ where
         DLogger::hold();
 
         self.reset().await?;
+        Timer::after_millis(1000).await;
+        DLogger::reset_hold();
 
+        DLogger::hold();
         let id = self.chip.read_field_str("ID").await?; // ID is 0x12 (0xB2 with command bit) and should return 0x50
-        
-        DLogger::release();
-        d_info!("WHOAMI {}", id);
-        d_info!("WHOAMIVAL {}", Self::WHO_AM_I_VAL);
+        DLogger::reset_hold();
 
         if id == Self::WHO_AM_I_VAL {
             d_info!("TSL connection successful");
@@ -197,19 +197,13 @@ where
         // Write persist value - how many consecutive readings are needed
         self.chip.write_field_str("PERSIST", persist).await?;
 
-        // Clear interrupt
-        self.clear_interrupt().await?;
-
         // Enable persist interrupts
         self.enable_p_interrupt().await?;
 
-        
+        // Clear interrupt
+        self.clear_interrupt().await?;
 
         DLogger::release();
-
-        let (low_thresh, high_thresh) = self.read_p_interrupt_thresholds().await.unwrap();
-        d_info!("Current high threshold is {}", high_thresh);
-        d_info!("Current low threshold is {}", low_thresh);
         
         Ok(())
     }
