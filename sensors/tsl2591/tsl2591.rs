@@ -121,7 +121,7 @@ where
         Ok(())
     }
 
-    // Clear interrupts
+    // Clear interrupts from both types of interrupts
     pub async fn clear_interrupt(&self) -> Result<(), TSL2591Error> {
         d_info!("Clearing TSL2591 interrupt");
         DLogger::hold();
@@ -130,11 +130,32 @@ where
         Ok(())
     }
 
-    // Enable interrupts
-    pub async fn enable_interrupt(&self) -> Result<(), TSL2591Error> {
-        d_info!("Enabling TSL2591 interrupt");
+    // Enable persist interrupts
+    pub async fn enable_p_interrupt(&self) -> Result<(), TSL2591Error> {
+        d_info!("Enabling TSL2591 persist interrupt");
         DLogger::hold();
-        self.chip.read_reg(0b11100100).await?;
+        self.chip.write_field_str("NPIEN", 0).await?;
+        self.chip.write_field_str("AIEN", 1).await?;
+        DLogger::release();
+        Ok(())
+    }
+
+    // Enable no-persist interrupts
+    pub async fn enable_np_interrupt(&self) -> Result<(), TSL2591Error> {
+        d_info!("Enabling TSL2591 no-persist interrupt");
+        DLogger::hold();
+        self.chip.write_field_str("AIEN", 0).await?;
+        self.chip.write_field_str("NPIEN", 1).await?;
+        DLogger::release();
+        Ok(())
+    }
+
+    // Disable interrupts
+    pub async fn disable_interrupt(&self) -> Result<(), TSL2591Error> {
+        d_info!("Disabling TSL2591 interrupts");
+        DLogger::hold();
+        self.chip.write_field_str("AIEN", 0).await?;
+        self.chip.write_field_str("NPIEN", 0).await?;
         DLogger::release();
         Ok(())
     }
@@ -146,6 +167,117 @@ where
         self.chip.write_field_str("AGAIN", 0b01).await?;
         self.chip.write_field_str("ATIME", 0b010).await?;
         DLogger::release();
+        Ok(())
+    }
+
+    // Set persist interrupts
+    // Persist - Multiple samples are needed to trigger the interrupt
+    // HIGH and LOW interrupts are NOT hysteresis based
+    // Pin will go LOW when the signal is below the LOW threshold or above the HIGH threshold
+    pub async fn set_p_interrupt(&self, low_thresh: u16, high_thresh: u16, persist: u8) -> Result<(), TSL2591Error> {
+
+        DLogger::hold();
+        
+        // Split into LSB and MSB
+        let high_thresh_bytes = high_thresh.to_le_bytes();
+        let high_thresh_lsb = high_thresh_bytes[0];
+        let high_thresh_msb = high_thresh_bytes[1];
+
+        let low_thresh_bytes = low_thresh.to_le_bytes();
+        let low_thresh_lsb = low_thresh_bytes[0];
+        let low_thresh_msb = low_thresh_bytes[1];
+
+        // Write interrupt values
+        self.chip.write_field_str("AIHTL", high_thresh_lsb).await?;      // Persist high threshold low byte
+        self.chip.write_field_str("AIHTH", high_thresh_msb).await?;      // Persist high threshold high byte
+
+        self.chip.write_field_str("AILTL", low_thresh_lsb).await?;     // Persist low threshold low byte
+        self.chip.write_field_str("AILTH", low_thresh_msb).await?;     // Persist low threshold high byte
+
+        // Write persist value - how many consecutive readings are needed
+        self.chip.write_field_str("PERSIST", persist).await?;
+
+        // Clear interrupt
+        self.clear_interrupt().await?;
+
+        // Enable persist interrupts
+        self.enable_p_interrupt().await?;
+
+        
+
+        DLogger::release();
+
+        let (low_thresh, high_thresh) = self.read_p_interrupt_thresholds().await.unwrap();
+        d_info!("Current high threshold is {}", high_thresh);
+        d_info!("Current low threshold is {}", low_thresh);
+        
+        Ok(())
+    }
+
+    // Read persist interrupt thresholds from registers
+    // Returns (low_thresh, high_thresh) as u16
+    pub async fn read_p_interrupt_thresholds(&self) -> Result<(u16, u16), TSL2591Error> {
+        
+        DLogger::hold();
+        
+        let mut buf = [0u8; 4];
+        self.chip.read_regs_str("AILTL", &mut buf).await?;
+        let low_thresh  = u16::from_le_bytes([buf[0], buf[1]]);
+        let high_thresh = u16::from_le_bytes([buf[2], buf[3]]);
+
+        DLogger::release();
+
+        Ok((low_thresh, high_thresh))
+    }
+
+    // Read no-persist interrupt thresholds from registers
+    // Returns (low_thresh, high_thresh) as u16
+    pub async fn read_np_interrupt_thresholds(&self) -> Result<(u16, u16), TSL2591Error> {
+        
+        DLogger::hold();
+        
+        let mut buf = [0u8; 4];
+        self.chip.read_regs_str("NPAILTL", &mut buf).await?;
+        let low_thresh  = u16::from_le_bytes([buf[0], buf[1]]);
+        let high_thresh = u16::from_le_bytes([buf[2], buf[3]]);
+
+        DLogger::release();
+
+        Ok((low_thresh, high_thresh))
+    }
+
+    // Set no-persist interrupts
+    // No-persist - Only a single sample is needed to trigger the interrupt
+    // HIGH and LOW interrupts are NOT hysteresis based
+    // Pin will go LOW when the signal is below the LOW threshold or above the HIGH threshold
+    pub async fn set_np_interrupt(&self, low_thresh: u16, high_thresh: u16) -> Result<(), TSL2591Error> {
+
+        DLogger::hold();
+        
+        // Split into LSB and MSB
+        let high_thresh_bytes = high_thresh.to_le_bytes();
+        let high_thresh_lsb = high_thresh_bytes[0];
+        let high_thresh_msb = high_thresh_bytes[1];
+
+        let low_thresh_bytes = low_thresh.to_le_bytes();
+        let low_thresh_lsb = low_thresh_bytes[0];
+        let low_thresh_msb = low_thresh_bytes[1];
+
+        // Write interrupt values
+        self.chip.write_field_str("NPAIHTL", high_thresh_lsb).await?;      // No persist high threshold low byte
+        self.chip.write_field_str("NPAIHTH", high_thresh_msb).await?;      // No persist high threshold high byte
+
+        self.chip.write_field_str("NPAILTL", low_thresh_lsb).await?;     // No persist low threshold low byte
+        self.chip.write_field_str("NPAILTH", low_thresh_msb).await?;     // No persist low threshold high byte
+
+        // Enable no-persist interrupts
+        self.enable_np_interrupt().await?;
+
+        // Clear interrupt
+        self.clear_interrupt().await?;
+
+        DLogger::release();
+        
         Ok(())
     }
 
