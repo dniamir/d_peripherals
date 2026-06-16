@@ -36,7 +36,7 @@ impl <COMM> MAX17260<COMM> {
     // Conversions
     pub const SEC_PER_LSB: f32 = 5.625;
     pub const PER_PER_LSB: f32 = 1.0 / 256.0;
-    pub const MAH_PER_LSB: f32 = 0.5;
+    pub const MAH_PER_LSB: f32 = 0.5;                       // mAh / LSB - when using 10mOhm for rsense
     pub const UA_PER_LSB: f32 = 156.25;
     pub const V_PER_LSB: f32 =  78.125 * 1e-6;
     pub const V_EMPTY_PER_LSB: f32 = 10.0 * 1e-3;           // V / LSB
