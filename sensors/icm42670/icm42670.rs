@@ -190,6 +190,15 @@ where
         Ok(())
     }
 
+    pub async fn power_down(&self) -> Result<(), ICM42670Error> {
+        d_info!("Powering down gyro and accel");
+        DLogger::hold();
+        self.disable_accel().await?;
+        self.disable_gyro().await?;
+        DLogger::release();
+        Ok(())
+    }
+
     // ---- Full-scale range ----
     pub async fn set_accel_fs(&self, fs: AccelFs) -> Result<(), ICM42670Error> {
         self.chip.write_field_str("accel_ui_fs_sel", fs as u8).await?;
