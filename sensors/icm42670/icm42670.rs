@@ -314,7 +314,6 @@ where
 
         DLogger::hold();
         self.chip.read_regs_str("temp_data1", &mut buf).await?;
-        DLogger::release();
 
         let temp_raw = i16::from_be_bytes([buf[0], buf[1]]) as i32;
         let temp_degc = (temp_raw as f32 / 128.0) + 25.0;
@@ -331,6 +330,7 @@ where
         // Convert to real units
         let accel_fs = self.get_accel_fs().await?;
         let gyro_fs = self.get_gyro_fs().await?;
+        DLogger::release();
 
         let accel_x_gee = accel_x_lsb as f32 * accel_fs as f32 / 32768.0;
         let accel_y_gee = accel_y_lsb as f32 * accel_fs as f32 / 32768.0;
