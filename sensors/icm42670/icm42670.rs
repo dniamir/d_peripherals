@@ -136,11 +136,6 @@ where
         let this = Self {chip};
         DLogger::release();
 
-        // loop {
-        //     let whoamival = this.chip.read_reg(Self::WHO_AM_I_REG).await?;
-        //     Timer::after_millis(2000).await;
-        // }
-
         Ok(this)
     }
 }
