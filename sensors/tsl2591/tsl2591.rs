@@ -161,6 +161,7 @@ where
     }
 
     // Basic configuration for the sensor
+    // Sets integration time to 300ms
     pub async fn basic_config(&self) -> Result<(), TSL2591Error> {
         d_info!("Initializing TSL2591 basic configuration");
         DLogger::hold();
@@ -199,6 +200,7 @@ where
 
         // Enable persist interrupts
         self.enable_p_interrupt().await?;
+        Timer::after_millis(100).await;
 
         // Clear interrupt
         self.clear_interrupt().await?;
